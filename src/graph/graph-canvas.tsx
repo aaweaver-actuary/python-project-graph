@@ -7,24 +7,30 @@ export interface GraphCanvasProps {
 }
 
 export function GraphCanvas({ payload }: GraphCanvasProps) {
+  const { nodes, edges } = payload;
+
   return (
     <section data-testid="graph-canvas">
-      {payload.nodes.map((node) => (
+      {nodes.map((node) => (
         <div key={node.id} data-testid="graph-node" data-node-id={node.id}>
           {node.name}
         </div>
       ))}
 
-      {payload.edges.map((edge, index) => (
-        <div
-          key={`${edge.source}->${edge.target}-${index}`}
-          data-testid="graph-edge"
-          data-edge-source={edge.source}
-          data-edge-target={edge.target}
-        >
-          {`${edge.source} -> ${edge.target}`}
-        </div>
-      ))}
+      {edges.map((edge, index) => {
+        const edgeIdentity = `${edge.source}->${edge.target}`;
+
+        return (
+          <div
+            key={`${edgeIdentity}-${index}`}
+            data-testid="graph-edge"
+            data-edge-source={edge.source}
+            data-edge-target={edge.target}
+          >
+            {`${edge.source} -> ${edge.target}`}
+          </div>
+        );
+      })}
     </section>
   );
 }

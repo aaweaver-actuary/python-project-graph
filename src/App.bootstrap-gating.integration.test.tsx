@@ -72,6 +72,12 @@ const renderStrictModeAppWithBootstrapRunner = (
     </StrictMode>,
   );
 
+const createReadyBootstrapRunner = (payload: GraphPayload) =>
+  vi.fn<AppBootstrapRunner>().mockResolvedValue({
+    state: "ready",
+    payload,
+  });
+
 const createPayloadWithCounts = (
   nodeCount: number,
   edgeCount: number,
@@ -161,10 +167,7 @@ describe("App bootstrap gating integration", () => {
 
   it("runs bootstrap effectively once under StrictMode replay and reaches ready", async () => {
     const readyPayload = createPayloadWithCounts(6, 4);
-    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
-      state: "ready",
-      payload: readyPayload,
-    });
+    const runBootstrap = createReadyBootstrapRunner(readyPayload);
 
     renderStrictModeAppWithBootstrapRunner(runBootstrap);
 
@@ -233,10 +236,7 @@ describe("App bootstrap gating integration", () => {
   });
 
   it("renders one node and directed edge per 4/4 fixture entry with stable identity", async () => {
-    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
-      state: "ready",
-      payload: graphFixturePayload,
-    });
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
 
     renderAppWithBootstrapRunner(runBootstrap);
 
@@ -288,10 +288,7 @@ describe("App bootstrap gating integration", () => {
   });
 
   it("renders a visible label for each 4/4 fixture node", async () => {
-    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
-      state: "ready",
-      payload: graphFixturePayload,
-    });
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
 
     renderAppWithBootstrapRunner(runBootstrap);
 
@@ -304,10 +301,7 @@ describe("App bootstrap gating integration", () => {
   });
 
   it("renders a visible direction label for each 4/4 fixture edge", async () => {
-    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
-      state: "ready",
-      payload: graphFixturePayload,
-    });
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
 
     renderAppWithBootstrapRunner(runBootstrap);
 
@@ -359,10 +353,7 @@ describe("App bootstrap gating integration", () => {
 
   it("shows ready view payload-derived counts using a non-4/4 payload", async () => {
     const readyPayload = createPayloadWithCounts(3, 2);
-    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
-      state: "ready",
-      payload: readyPayload,
-    });
+    const runBootstrap = createReadyBootstrapRunner(readyPayload);
 
     renderAppWithBootstrapRunner(runBootstrap);
 
@@ -472,10 +463,9 @@ describe("App bootstrap gating integration", () => {
     expectOnlyBootstrapViewVisible(BOOTSTRAP_LOADING_VIEW_TEST_ID);
     loadingRender.unmount();
 
-    const readyRunBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
-      state: "ready",
-      payload: createPayloadWithCounts(2, 1),
-    });
+    const readyRunBootstrap = createReadyBootstrapRunner(
+      createPayloadWithCounts(2, 1),
+    );
 
     const readyRender = renderAppWithBootstrapRunner(readyRunBootstrap);
 
