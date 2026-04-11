@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
+import { GraphCanvas } from "./graph/graph-canvas";
 
 export interface AppProps {
   runBootstrap: () => Promise<GraphBootstrapState>;
@@ -16,20 +17,30 @@ const bootstrapPromiseByRunner = new WeakMap<
 
 const FALLBACK_BOOTSTRAP_ERROR_MESSAGE = "Bootstrap failed";
 
+function toNonEmptyTrimmedMessage(value: string): string | null {
+  const trimmedMessage = value.trim();
+
+  if (trimmedMessage.length === 0) {
+    return null;
+  }
+
+  return trimmedMessage;
+}
+
 function normalizeBootstrapErrors(error: unknown): string[] {
   if (error instanceof Error) {
-    const trimmedMessage = error.message.trim();
+    const normalizedMessage = toNonEmptyTrimmedMessage(error.message);
 
-    if (trimmedMessage.length > 0) {
-      return [trimmedMessage];
+    if (normalizedMessage !== null) {
+      return [normalizedMessage];
     }
   }
 
   if (typeof error === "string") {
-    const trimmedMessage = error.trim();
+    const normalizedMessage = toNonEmptyTrimmedMessage(error);
 
-    if (trimmedMessage.length > 0) {
-      return [trimmedMessage];
+    if (normalizedMessage !== null) {
+      return [normalizedMessage];
     }
   }
 
@@ -90,10 +101,17 @@ function App({ runBootstrap }: AppProps) {
   }
 
   if (bootstrapState.state === "ready") {
+    const { payload } = bootstrapState;
+
     return (
       <section data-testid="bootstrap-ready-view">
-        <p>Nodes: {bootstrapState.payload.nodes.length}</p>
-        <p>Edges: {bootstrapState.payload.edges.length}</p>
+        <p>Nodes: {payload.nodes.length}</p>
+        <p>Edges: {payload.edges.length}</p>
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={() => undefined}
+        />
       </section>
     );
   }
