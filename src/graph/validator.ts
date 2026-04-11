@@ -5,8 +5,22 @@ import type {
 } from "./contracts";
 
 function validate(payload: GraphPayload): GraphValidationResult {
-  const knownNodeIds = new Set(payload.nodes.map(({ id }) => id));
+  const knownNodeIds = new Set<string>();
+  const duplicateNodeIds = new Set<string>();
   const validationErrors: string[] = [];
+
+  for (const { id } of payload.nodes) {
+    if (knownNodeIds.has(id)) {
+      if (!duplicateNodeIds.has(id)) {
+        duplicateNodeIds.add(id);
+        validationErrors.push(`Duplicate node id: ${id}`);
+      }
+
+      continue;
+    }
+
+    knownNodeIds.add(id);
+  }
 
   for (const { source, target } of payload.edges) {
     if (!knownNodeIds.has(source)) {
