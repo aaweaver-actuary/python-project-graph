@@ -18,11 +18,26 @@ type InvalidPayloadState = Extract<
   { state: "invalid-payload" }
 >;
 
-const importBootstrapContracts = () => import("./bootstrap.contracts");
+const loadBootstrapContracts = async (): Promise<BootstrapContractsModule> =>
+  (await import("./bootstrap.contracts")) as BootstrapContractsModule;
 
 const emptyPayload: GraphPayload = {
   nodes: [],
   edges: [],
+};
+
+const runtimeLoadingState: GraphBootstrapState = {
+  state: "loading",
+};
+
+const runtimeReadyState: GraphBootstrapState = {
+  state: "ready",
+  payload: emptyPayload,
+};
+
+const runtimeInvalidPayloadState: GraphBootstrapState = {
+  state: "invalid-payload",
+  errors: ["invalid payload"],
 };
 
 const asBootstrapState = (state: GraphBootstrapState): GraphBootstrapState =>
@@ -92,8 +107,7 @@ describe("bootstrap contracts", () => {
   });
 
   it("exports a canonical bootstrap state tag list at runtime", async () => {
-    const bootstrapContracts =
-      (await importBootstrapContracts()) as BootstrapContractsModule;
+    const bootstrapContracts = await loadBootstrapContracts();
 
     expect(bootstrapContracts.BOOTSTRAP_STATE_TAGS).toEqual([
       "loading",
@@ -103,52 +117,32 @@ describe("bootstrap contracts", () => {
   });
 
   it("exports a ready-state guard predicate at runtime", async () => {
-    const bootstrapContracts =
-      (await importBootstrapContracts()) as BootstrapContractsModule;
+    const bootstrapContracts = await loadBootstrapContracts();
 
-    const loadingState: GraphBootstrapState = {
-      state: "loading",
-    };
-    const readyState: GraphBootstrapState = {
-      state: "ready",
-      payload: emptyPayload,
-    };
-    const invalidPayloadState: GraphBootstrapState = {
-      state: "invalid-payload",
-      errors: ["invalid payload"],
-    };
-
-    expect(bootstrapContracts.isReadyBootstrapState(loadingState)).toBe(false);
-    expect(bootstrapContracts.isReadyBootstrapState(readyState)).toBe(true);
-    expect(bootstrapContracts.isReadyBootstrapState(invalidPayloadState)).toBe(
+    expect(bootstrapContracts.isReadyBootstrapState(runtimeLoadingState)).toBe(
       false,
     );
+    expect(bootstrapContracts.isReadyBootstrapState(runtimeReadyState)).toBe(
+      true,
+    );
+    expect(
+      bootstrapContracts.isReadyBootstrapState(runtimeInvalidPayloadState),
+    ).toBe(false);
   });
 
   it("exports an invalid-payload guard predicate at runtime", async () => {
-    const bootstrapContracts =
-      (await importBootstrapContracts()) as BootstrapContractsModule;
-
-    const loadingState: GraphBootstrapState = {
-      state: "loading",
-    };
-    const readyState: GraphBootstrapState = {
-      state: "ready",
-      payload: emptyPayload,
-    };
-    const invalidPayloadState: GraphBootstrapState = {
-      state: "invalid-payload",
-      errors: ["invalid payload"],
-    };
+    const bootstrapContracts = await loadBootstrapContracts();
 
     expect(
-      bootstrapContracts.isInvalidPayloadBootstrapState(loadingState),
+      bootstrapContracts.isInvalidPayloadBootstrapState(runtimeLoadingState),
     ).toBe(false);
     expect(
-      bootstrapContracts.isInvalidPayloadBootstrapState(invalidPayloadState),
+      bootstrapContracts.isInvalidPayloadBootstrapState(
+        runtimeInvalidPayloadState,
+      ),
     ).toBe(true);
-    expect(bootstrapContracts.isInvalidPayloadBootstrapState(readyState)).toBe(
-      false,
-    );
+    expect(
+      bootstrapContracts.isInvalidPayloadBootstrapState(runtimeReadyState),
+    ).toBe(false);
   });
 });
