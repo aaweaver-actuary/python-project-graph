@@ -2,9 +2,14 @@
 set -eu
 
 branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+is_merge_commit=0
+
+if git rev-parse --verify MERGE_HEAD >/dev/null 2>&1; then
+  is_merge_commit=1
+fi
 
 # Allow the first bootstrap commit on main, block subsequent commits.
-if [ "$branch" = "main" ] && git rev-parse --verify HEAD >/dev/null 2>&1; then
+if [ "$branch" = "main" ] && [ "$is_merge_commit" -eq 0 ] && git rev-parse --verify HEAD >/dev/null 2>&1; then
   echo "Direct commits to main are blocked. Create and switch to a feature branch."
   exit 1
 fi
