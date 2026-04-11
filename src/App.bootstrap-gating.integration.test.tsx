@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { StrictMode, type ComponentProps } from "react";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
@@ -29,6 +35,8 @@ const BOOTSTRAP_INVALID_VIEW_TEST_ID = "bootstrap-invalid-payload-view";
 const GRAPH_CANVAS_TEST_ID = "graph-canvas";
 const GRAPH_NODE_TEST_ID = "graph-node";
 const GRAPH_EDGE_TEST_ID = "graph-edge";
+const GRAPH_NODE_SELECTED_CLASS = "graph-node--selected";
+const GRAPH_NODE_SELECTED_FONT_WEIGHT = "700";
 
 const BOOTSTRAP_VIEW_TEST_IDS = [
   BOOTSTRAP_LOADING_VIEW_TEST_ID,
@@ -132,6 +140,72 @@ const expectInvalidPayloadErrorsVisible = (
   for (const errorMessage of expectedErrors) {
     expect(within(invalidPayloadView).getByText(errorMessage)).toBeVisible();
   }
+};
+
+const getGraphNodeElementById = (
+  graphCanvas: HTMLElement,
+  nodeId: string,
+): HTMLElement => {
+  const nodeElement = graphCanvas.querySelector(
+    `[data-testid="${GRAPH_NODE_TEST_ID}"][data-node-id="${nodeId}"]`,
+  );
+
+  expect(nodeElement).not.toBeNull();
+
+  return nodeElement as HTMLElement;
+};
+
+const expectGraphNodeSelectionVisualState = (
+  nodeElement: HTMLElement,
+  expectedSelected: boolean,
+): void => {
+  expect(nodeElement).toHaveAttribute(
+    "data-selected",
+    expectedSelected ? "true" : "false",
+  );
+
+  if (expectedSelected) {
+    expect(nodeElement).toHaveStyle({
+      fontWeight: GRAPH_NODE_SELECTED_FONT_WEIGHT,
+    });
+
+    expect(nodeElement).toHaveClass(GRAPH_NODE_SELECTED_CLASS);
+
+    return;
+  }
+
+  expect(nodeElement).not.toHaveStyle({
+    fontWeight: GRAPH_NODE_SELECTED_FONT_WEIGHT,
+  });
+
+  expect(nodeElement).not.toHaveClass(GRAPH_NODE_SELECTED_CLASS);
+};
+
+const expectSelectedNodeCount = (
+  graphCanvas: HTMLElement,
+  expectedCount: number,
+): void => {
+  const selectedNodes = within(graphCanvas)
+    .getAllByTestId(GRAPH_NODE_TEST_ID)
+    .filter(
+      (nodeElement) => nodeElement.getAttribute("data-selected") === "true",
+    );
+
+  expect(selectedNodes).toHaveLength(expectedCount);
+};
+
+const expectOnlySelectedNode = (
+  graphCanvas: HTMLElement,
+  expectedSelectedNodeId: string | null,
+): void => {
+  for (const fixtureNode of graphFixturePayload.nodes) {
+    const graphNode = getGraphNodeElementById(graphCanvas, fixtureNode.id);
+    const expectedSelectedValue = fixtureNode.id === expectedSelectedNodeId;
+
+    expectGraphNodeSelectionVisualState(graphNode, expectedSelectedValue);
+  }
+
+  expectSelectedNodeCount(graphCanvas, expectedSelectedNodeId === null ? 0 : 1);
 };
 
 describe("App bootstrap gating integration", () => {
@@ -315,6 +389,45 @@ describe("App bootstrap gating integration", () => {
         ),
       ).toBeVisible();
     }
+  });
+
+  it("starts ready with no selected node and unselected visual markers", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    expect(within(graphCanvas).getAllByTestId(GRAPH_NODE_TEST_ID)).toHaveLength(
+      graphFixturePayload.nodes.length,
+    );
+
+    expectOnlySelectedNode(graphCanvas, null);
+  });
+
+  it("keeps exactly one selected node when selection moves none -> A -> B", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    const nodeAId = graphFixturePayload.nodes[0].id;
+    const nodeBId = graphFixturePayload.nodes[1].id;
+    const nodeA = getGraphNodeElementById(graphCanvas, nodeAId);
+    const nodeB = getGraphNodeElementById(graphCanvas, nodeBId);
+
+    expectOnlySelectedNode(graphCanvas, null);
+
+    fireEvent.click(nodeA);
+
+    expectOnlySelectedNode(graphCanvas, nodeAId);
+
+    fireEvent.click(nodeB);
+
+    expectOnlySelectedNode(graphCanvas, nodeBId);
   });
 
   it("transitions from loading to invalid-payload when pending bootstrap resolves later", async () => {

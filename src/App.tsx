@@ -66,6 +66,7 @@ function App({ runBootstrap }: AppProps) {
   const [bootstrapState, setBootstrapState] = useState<GraphBootstrapState>(
     initialBootstrapState,
   );
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -109,8 +110,8 @@ function App({ runBootstrap }: AppProps) {
         <p>Edges: {payload.edges.length}</p>
         <GraphCanvas
           payload={payload}
-          selectedNodeId={null}
-          onSelectNode={() => undefined}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={setSelectedNodeId}
         />
       </section>
     );

@@ -6,16 +6,34 @@ export interface GraphCanvasProps {
   onSelectNode: (nodeId: string) => void;
 }
 
-export function GraphCanvas({ payload }: GraphCanvasProps) {
+export function GraphCanvas({
+  payload,
+  selectedNodeId,
+  onSelectNode,
+}: GraphCanvasProps) {
   const { nodes, edges } = payload;
 
   return (
     <section data-testid="graph-canvas">
-      {nodes.map((node) => (
-        <div key={node.id} data-testid="graph-node" data-node-id={node.id}>
-          {node.name}
-        </div>
-      ))}
+      {nodes.map((node) => {
+        const isSelected = selectedNodeId === node.id;
+
+        return (
+          <div
+            key={node.id}
+            data-testid="graph-node"
+            data-node-id={node.id}
+            data-selected={isSelected ? "true" : "false"}
+            className={isSelected ? "graph-node--selected" : undefined}
+            style={{ fontWeight: isSelected ? 700 : 400 }}
+            onClick={() => {
+              onSelectNode(node.id);
+            }}
+          >
+            {node.name}
+          </div>
+        );
+      })}
 
       {edges.map((edge, index) => {
         const edgeIdentity = `${edge.source}->${edge.target}`;
