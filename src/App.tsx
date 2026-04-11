@@ -5,29 +5,39 @@ export interface AppProps {
   runBootstrap: () => Promise<GraphBootstrapState>;
 }
 
+type AppBootstrapRunner = AppProps["runBootstrap"];
+
 const initialBootstrapState: GraphBootstrapState = { state: "loading" };
 
 const bootstrapPromiseByRunner = new WeakMap<
-  AppProps["runBootstrap"],
+  AppBootstrapRunner,
   Promise<GraphBootstrapState>
 >();
 
 const FALLBACK_BOOTSTRAP_ERROR_MESSAGE = "Bootstrap failed";
 
 function normalizeBootstrapErrors(error: unknown): string[] {
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return [error.message.trim()];
+  if (error instanceof Error) {
+    const trimmedMessage = error.message.trim();
+
+    if (trimmedMessage.length > 0) {
+      return [trimmedMessage];
+    }
   }
 
-  if (typeof error === "string" && error.trim().length > 0) {
-    return [error.trim()];
+  if (typeof error === "string") {
+    const trimmedMessage = error.trim();
+
+    if (trimmedMessage.length > 0) {
+      return [trimmedMessage];
+    }
   }
 
   return [FALLBACK_BOOTSTRAP_ERROR_MESSAGE];
 }
 
 function getOrCreateBootstrapPromise(
-  runBootstrap: AppProps["runBootstrap"],
+  runBootstrap: AppBootstrapRunner,
 ): Promise<GraphBootstrapState> {
   const existingPromise = bootstrapPromiseByRunner.get(runBootstrap);
 
@@ -42,26 +52,31 @@ function getOrCreateBootstrapPromise(
 }
 
 function App({ runBootstrap }: AppProps) {
-  const [bootstrapState, setBootstrapState] =
-    useState<GraphBootstrapState>(initialBootstrapState);
+  const [bootstrapState, setBootstrapState] = useState<GraphBootstrapState>(
+    initialBootstrapState,
+  );
 
   useEffect(() => {
     let isMounted = true;
 
-    void getOrCreateBootstrapPromise(runBootstrap)
-      .then((nextBootstrapState) => {
-        if (isMounted) {
-          setBootstrapState(nextBootstrapState);
-        }
-      })
-      .catch((error: unknown) => {
-        if (isMounted) {
-          setBootstrapState({
-            state: "invalid-payload",
-            errors: normalizeBootstrapErrors(error),
-          });
-        }
+    const setBootstrapStateIfMounted = (
+      nextBootstrapState: GraphBootstrapState,
+    ): void => {
+      if (isMounted) {
+        setBootstrapState(nextBootstrapState);
+      }
+    };
+
+    const setInvalidStateFromError = (error: unknown): void => {
+      setBootstrapStateIfMounted({
+        state: "invalid-payload",
+        errors: normalizeBootstrapErrors(error),
       });
+    };
+
+    void getOrCreateBootstrapPromise(runBootstrap)
+      .then(setBootstrapStateIfMounted)
+      .catch(setInvalidStateFromError);
 
     return () => {
       isMounted = false;
@@ -69,7 +84,9 @@ function App({ runBootstrap }: AppProps) {
   }, [runBootstrap]);
 
   if (bootstrapState.state === "loading") {
-    return <section data-testid="bootstrap-loading-view">Loading graph...</section>;
+    return (
+      <section data-testid="bootstrap-loading-view">Loading graph...</section>
+    );
   }
 
   if (bootstrapState.state === "ready") {

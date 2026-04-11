@@ -6,14 +6,17 @@ import { fixtureGraphDataSource } from "./graph/fixture-data-source.adapter";
 import { graphValidator } from "./graph/validator";
 import "./index.css";
 
-const runBootstrap = () =>
-  orchestrateGraphBootstrap({
-    dataSource: fixtureGraphDataSource,
-    validator: graphValidator,
-  });
+const bootstrapDependencies = {
+  dataSource: fixtureGraphDataSource,
+  validator: graphValidator,
+};
 
-createRoot(document.getElementById('root')!).render(
+const runBootstrap = () => orchestrateGraphBootstrap(bootstrapDependencies);
+
+const rootElement = document.getElementById("root")!;
+
+createRoot(rootElement).render(
   <StrictMode>
     <App runBootstrap={runBootstrap} />
   </StrictMode>,
-)
+);

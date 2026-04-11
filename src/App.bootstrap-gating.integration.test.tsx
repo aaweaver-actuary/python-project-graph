@@ -103,6 +103,20 @@ const expectOnlyBootstrapViewVisible = (
   expect(screen.getByTestId(expectedViewTestId)).toBeVisible();
 };
 
+const expectReadyViewPayloadCounts = (payload: GraphPayload): void => {
+  expect(screen.getByText(`Nodes: ${payload.nodes.length}`)).toBeVisible();
+  expect(screen.getByText(`Edges: ${payload.edges.length}`)).toBeVisible();
+};
+
+const expectInvalidPayloadErrorsVisible = (
+  invalidPayloadView: HTMLElement,
+  expectedErrors: readonly string[],
+): void => {
+  for (const errorMessage of expectedErrors) {
+    expect(within(invalidPayloadView).getByText(errorMessage)).toBeVisible();
+  }
+};
+
 describe("App bootstrap gating integration", () => {
   it("enforces the App bootstrap DI props contract at compile-time", () => {
     type AppProps = ComponentProps<typeof App>;
@@ -142,12 +156,7 @@ describe("App bootstrap gating integration", () => {
     });
 
     expect(runBootstrap).toHaveBeenCalledTimes(1);
-    expect(
-      screen.getByText(`Nodes: ${readyPayload.nodes.length}`),
-    ).toBeVisible();
-    expect(
-      screen.getByText(`Edges: ${readyPayload.edges.length}`),
-    ).toBeVisible();
+    expectReadyViewPayloadCounts(readyPayload);
     expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
     expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
     expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
@@ -200,12 +209,7 @@ describe("App bootstrap gating integration", () => {
       expect(screen.getByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeVisible();
     });
 
-    expect(
-      screen.getByText(`Nodes: ${readyPayload.nodes.length}`),
-    ).toBeVisible();
-    expect(
-      screen.getByText(`Edges: ${readyPayload.edges.length}`),
-    ).toBeVisible();
+    expectReadyViewPayloadCounts(readyPayload);
     expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
     expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
     expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
@@ -238,9 +242,7 @@ describe("App bootstrap gating integration", () => {
       BOOTSTRAP_INVALID_VIEW_TEST_ID,
     );
 
-    for (const errorMessage of propagatedErrors) {
-      expect(within(invalidPayloadView).getByText(errorMessage)).toBeVisible();
-    }
+    expectInvalidPayloadErrorsVisible(invalidPayloadView, propagatedErrors);
 
     expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
     expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
@@ -260,12 +262,7 @@ describe("App bootstrap gating integration", () => {
       expect(screen.getByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeVisible();
     });
 
-    expect(
-      screen.getByText(`Nodes: ${readyPayload.nodes.length}`),
-    ).toBeVisible();
-    expect(
-      screen.getByText(`Edges: ${readyPayload.edges.length}`),
-    ).toBeVisible();
+    expectReadyViewPayloadCounts(readyPayload);
     expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
     expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
   });
@@ -288,9 +285,7 @@ describe("App bootstrap gating integration", () => {
       BOOTSTRAP_INVALID_VIEW_TEST_ID,
     );
 
-    for (const errorMessage of propagatedErrors) {
-      expect(within(invalidPayloadView).getByText(errorMessage)).toBeVisible();
-    }
+    expectInvalidPayloadErrorsVisible(invalidPayloadView, propagatedErrors);
 
     expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
     expectOnlyBootstrapViewVisible(BOOTSTRAP_INVALID_VIEW_TEST_ID);
