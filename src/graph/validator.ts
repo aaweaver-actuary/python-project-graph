@@ -1,6 +1,6 @@
 import type { GraphPayload, GraphValidationResult, GraphValidator } from './contracts'
 
-function validate(_payload: GraphPayload): GraphValidationResult {
+function validate(_graphPayload: GraphPayload): GraphValidationResult {
   return {
     ok: true,
     errors: [],

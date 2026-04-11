@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { GraphPayload } from './contracts'
 import { graphValidator } from './validator.ts'
 
-const validFixture: GraphPayload = {
+const validGraphPayloadFixture: GraphPayload = {
   nodes: [
     {
       id: 'module.utils',
@@ -63,8 +63,8 @@ const validFixture: GraphPayload = {
 }
 
 describe('GraphValidator happy path', () => {
-  it('returns ok=true and no errors for a valid fixture payload', () => {
-    const result = graphValidator.validate(validFixture)
+  it('returns ok=true and no errors for a valid graph payload fixture', () => {
+    const result = graphValidator.validate(validGraphPayloadFixture)
 
     expect(result.ok).toBe(true)
     expect(result.errors).toHaveLength(0)
