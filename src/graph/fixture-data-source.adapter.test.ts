@@ -20,35 +20,34 @@ const cloneGraphPayload = (payload: GraphPayload): GraphPayload => ({
 
 describe("fixture-backed GraphDataSource adapter", () => {
   it("returns a runtime Promise<GraphPayload> from loadGraph", async () => {
-    const fixtureAdapterModule = await loadFixtureDataSourceAdapter();
+    const { fixtureGraphDataSource, graphFixturePayload } =
+      await loadFixtureDataSourceAdapter();
 
-    const loadGraphResult =
-      fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+    const loadGraphPromise = fixtureGraphDataSource.loadGraph();
 
-    expect(loadGraphResult).toBeInstanceOf(Promise);
-    expect(Promise.resolve(loadGraphResult)).toBe(loadGraphResult);
+    expect(loadGraphPromise).toBeInstanceOf(Promise);
+    expect(Promise.resolve(loadGraphPromise)).toBe(loadGraphPromise);
 
-    const payload = await loadGraphResult;
+    const payload = await loadGraphPromise;
 
-    expect(payload).toEqual(fixtureAdapterModule.graphFixturePayload);
+    expect(payload).toEqual(graphFixturePayload);
   });
 
   it("resolves fixture payload with exactly 4 nodes and 4 edges", async () => {
-    const fixtureAdapterModule = await loadFixtureDataSourceAdapter();
+    const { fixtureGraphDataSource, graphFixturePayload } =
+      await loadFixtureDataSourceAdapter();
 
-    const payload =
-      await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+    const payload = await fixtureGraphDataSource.loadGraph();
 
     expect(payload.nodes).toHaveLength(4);
     expect(payload.edges).toHaveLength(4);
-    expect(payload).toEqual(fixtureAdapterModule.graphFixturePayload);
+    expect(payload).toEqual(graphFixturePayload);
   });
 
   it("returns a payload that validates successfully with graphValidator", async () => {
-    const fixtureAdapterModule = await loadFixtureDataSourceAdapter();
+    const { fixtureGraphDataSource } = await loadFixtureDataSourceAdapter();
 
-    const payload =
-      await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+    const payload = await fixtureGraphDataSource.loadGraph();
     const validation = graphValidator.validate(payload);
 
     expect(validation.ok).toBe(true);
@@ -56,29 +55,26 @@ describe("fixture-backed GraphDataSource adapter", () => {
   });
 
   it("is deterministic across repeated loadGraph calls", async () => {
-    const fixtureAdapterModule = await loadFixtureDataSourceAdapter();
+    const { fixtureGraphDataSource, graphFixturePayload } =
+      await loadFixtureDataSourceAdapter();
 
-    const firstPayload =
-      await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
-    const secondPayload =
-      await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+    const firstPayload = await fixtureGraphDataSource.loadGraph();
+    const secondPayload = await fixtureGraphDataSource.loadGraph();
 
     expect(firstPayload).not.toBe(secondPayload);
     expect(firstPayload.nodes).not.toBe(secondPayload.nodes);
     expect(firstPayload.edges).not.toBe(secondPayload.edges);
     expect(firstPayload).toEqual(secondPayload);
-    expect(firstPayload).toEqual(fixtureAdapterModule.graphFixturePayload);
-    expect(secondPayload).toEqual(fixtureAdapterModule.graphFixturePayload);
+    expect(firstPayload).toEqual(graphFixturePayload);
+    expect(secondPayload).toEqual(graphFixturePayload);
   });
 
   it("preserves the baseline when an earlier loadGraph payload is mutated", async () => {
-    const fixtureAdapterModule = await loadFixtureDataSourceAdapter();
-    const baselinePayload = cloneGraphPayload(
-      fixtureAdapterModule.graphFixturePayload,
-    );
+    const { fixtureGraphDataSource, graphFixturePayload } =
+      await loadFixtureDataSourceAdapter();
+    const baselinePayload = cloneGraphPayload(graphFixturePayload);
 
-    const firstPayload =
-      await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+    const firstPayload = await fixtureGraphDataSource.loadGraph();
     const firstNode = firstPayload.nodes.at(0);
     const firstEdge = firstPayload.edges.at(0);
 
@@ -92,21 +88,18 @@ describe("fixture-backed GraphDataSource adapter", () => {
     firstEdge.target = "mutated.edge.target";
     firstPayload.edges.pop();
 
-    const secondPayload =
-      await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+    const secondPayload = await fixtureGraphDataSource.loadGraph();
 
     expect(firstPayload).not.toEqual(baselinePayload);
     expect(secondPayload).toEqual(baselinePayload);
-    expect(secondPayload).toEqual(fixtureAdapterModule.graphFixturePayload);
+    expect(secondPayload).toEqual(graphFixturePayload);
   });
 
   it("is unaffected by external mutation of graphFixturePayload", async () => {
-    const fixtureAdapterModule = await loadFixtureDataSourceAdapter();
-    const baselinePayload = cloneGraphPayload(
-      fixtureAdapterModule.graphFixturePayload,
-    );
-    const firstFixtureNode =
-      fixtureAdapterModule.graphFixturePayload.nodes.at(0);
+    const { fixtureGraphDataSource, graphFixturePayload } =
+      await loadFixtureDataSourceAdapter();
+    const baselinePayload = cloneGraphPayload(graphFixturePayload);
+    const firstFixtureNode = graphFixturePayload.nodes.at(0);
 
     if (!firstFixtureNode) {
       throw new Error("graphFixturePayload must include at least one node");
@@ -121,10 +114,10 @@ describe("fixture-backed GraphDataSource adapter", () => {
         // Immutable fixtures may reject writes.
       }
 
-      const payloadAfterExternalMutationAttempt =
-        await fixtureAdapterModule.fixtureGraphDataSource.loadGraph();
+      const payloadAfterMutationAttempt =
+        await fixtureGraphDataSource.loadGraph();
 
-      expect(payloadAfterExternalMutationAttempt).toEqual(baselinePayload);
+      expect(payloadAfterMutationAttempt).toEqual(baselinePayload);
     } finally {
       try {
         firstFixtureNode.name = originalNodeName;
