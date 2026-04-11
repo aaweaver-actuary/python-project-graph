@@ -66,6 +66,24 @@ const createDependencies = (
   validator: { validate },
 });
 
+const expectInvalidPayloadResult = (
+  result: GraphBootstrapState,
+  errorMessageSubstring: string,
+): void => {
+  expect(result.state).toBe("invalid-payload");
+
+  if (result.state !== "invalid-payload") {
+    expect.unreachable("expected invalid-payload bootstrap state");
+  }
+
+  expect(result.errors.length).toBeGreaterThan(0);
+  expect(result.errors.every((message) => message.trim().length > 0)).toBe(
+    true,
+  );
+  expect(result.errors.join(" ")).toContain(errorMessageSubstring);
+  expect("payload" in result).toBe(false);
+};
+
 describe("bootstrap orchestrator", () => {
   it("returns ready with payload when loadGraph resolves and validator reports ok=true", async () => {
     const orchestrateGraphBootstrap = await loadBootstrapOrchestrator();
@@ -130,20 +148,7 @@ describe("bootstrap orchestrator", () => {
 
     expect(loadGraph).toHaveBeenCalledTimes(1);
     expect(validate).not.toHaveBeenCalled();
-    expect(result.state).toBe("invalid-payload");
-
-    if (result.state !== "invalid-payload") {
-      expect.unreachable(
-        "expected invalid-payload state when loadGraph rejects",
-      );
-    }
-
-    expect(result.errors.length).toBeGreaterThan(0);
-    expect(result.errors.every((message) => message.trim().length > 0)).toBe(
-      true,
-    );
-    expect(result.errors.join(" ")).toContain("fixture load failed");
-    expect("payload" in result).toBe(false);
+    expectInvalidPayloadResult(result, "fixture load failed");
   });
 
   it("returns invalid-payload with normalized errors and does not reject when validator throws synchronously", async () => {
@@ -170,19 +175,7 @@ describe("bootstrap orchestrator", () => {
     expect(loadGraph).toHaveBeenCalledTimes(1);
     expect(validate).toHaveBeenCalledTimes(1);
     expect(validate.mock.calls[0]?.[0]).toBe(payload);
-
-    if (result.state !== "invalid-payload") {
-      expect.unreachable(
-        "expected invalid-payload state when validator throws",
-      );
-    }
-
-    expect(result.errors.length).toBeGreaterThan(0);
-    expect(result.errors.every((message) => message.trim().length > 0)).toBe(
-      true,
-    );
-    expect(result.errors.join(" ")).toContain("validator exploded");
-    expect("payload" in result).toBe(false);
+    expectInvalidPayloadResult(result, "validator exploded");
   });
 
   it("calls loadGraph exactly once per invocation across repeated runs", async () => {

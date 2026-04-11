@@ -14,6 +14,11 @@ const normalizeErrorMessage = (error: unknown): string => {
     : "Unknown graph bootstrap error";
 };
 
+const createInvalidPayloadState = (error: unknown): GraphBootstrapState => ({
+  state: "invalid-payload",
+  errors: [normalizeErrorMessage(error)],
+});
+
 export async function orchestrateGraphBootstrap(
   dependencies: GraphBootstrapDependencies,
 ): Promise<GraphBootstrapState> {
@@ -23,19 +28,13 @@ export async function orchestrateGraphBootstrap(
   try {
     payload = await dependencies.dataSource.loadGraph();
   } catch (error) {
-    return {
-      state: "invalid-payload",
-      errors: [normalizeErrorMessage(error)],
-    };
+    return createInvalidPayloadState(error);
   }
 
   try {
     validationResult = dependencies.validator.validate(payload);
   } catch (error) {
-    return {
-      state: "invalid-payload",
-      errors: [normalizeErrorMessage(error)],
-    };
+    return createInvalidPayloadState(error);
   }
 
   if (validationResult.ok) {
