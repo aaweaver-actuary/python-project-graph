@@ -17,6 +17,10 @@ const bootstrapPromiseByRunner = new WeakMap<
 
 const FALLBACK_BOOTSTRAP_ERROR_MESSAGE = "Bootstrap failed";
 
+function assertNeverBootstrapState(value: never): never {
+  throw new Error(`Unhandled bootstrap state: ${JSON.stringify(value)}`);
+}
+
 function toNonEmptyTrimmedMessage(value: string): string | null {
   const trimmedMessage = value.trim();
 
@@ -66,6 +70,7 @@ function App({ runBootstrap }: AppProps) {
   const [bootstrapState, setBootstrapState] = useState<GraphBootstrapState>(
     initialBootstrapState,
   );
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -85,7 +90,9 @@ function App({ runBootstrap }: AppProps) {
       });
     };
 
-    void getOrCreateBootstrapPromise(runBootstrap)
+    const bootstrapPromise = getOrCreateBootstrapPromise(runBootstrap);
+
+    void bootstrapPromise
       .then(setBootstrapStateIfMounted)
       .catch(setInvalidStateFromError);
 
@@ -94,35 +101,37 @@ function App({ runBootstrap }: AppProps) {
     };
   }, [runBootstrap]);
 
-  if (bootstrapState.state === "loading") {
-    return (
-      <section data-testid="bootstrap-loading-view">Loading graph...</section>
-    );
+  switch (bootstrapState.state) {
+    case "loading":
+      return (
+        <section data-testid="bootstrap-loading-view">Loading graph...</section>
+      );
+    case "ready": {
+      const { payload } = bootstrapState;
+
+      return (
+        <section data-testid="bootstrap-ready-view">
+          <p>Nodes: {payload.nodes.length}</p>
+          <p>Edges: {payload.edges.length}</p>
+          <GraphCanvas
+            payload={payload}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
+          />
+        </section>
+      );
+    }
+    case "invalid-payload":
+      return (
+        <section data-testid="bootstrap-invalid-payload-view">
+          {bootstrapState.errors.map((errorMessage, index) => (
+            <p key={`${errorMessage}-${index}`}>{errorMessage}</p>
+          ))}
+        </section>
+      );
+    default:
+      return assertNeverBootstrapState(bootstrapState);
   }
-
-  if (bootstrapState.state === "ready") {
-    const { payload } = bootstrapState;
-
-    return (
-      <section data-testid="bootstrap-ready-view">
-        <p>Nodes: {payload.nodes.length}</p>
-        <p>Edges: {payload.edges.length}</p>
-        <GraphCanvas
-          payload={payload}
-          selectedNodeId={null}
-          onSelectNode={() => undefined}
-        />
-      </section>
-    );
-  }
-
-  return (
-    <section data-testid="bootstrap-invalid-payload-view">
-      {bootstrapState.errors.map((error, index) => (
-        <p key={`${error}-${index}`}>{error}</p>
-      ))}
-    </section>
-  );
 }
 
 export default App;
