@@ -1,0 +1,378 @@
+// @vitest-environment jsdom
+
+import "@testing-library/jest-dom/vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import { StrictMode, type ComponentProps } from "react";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
+
+import App from "./App";
+import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
+import type { GraphPayload } from "./graph/contracts";
+
+type AppBootstrapRunner = () => Promise<GraphBootstrapState>;
+
+interface AppBootstrapProps {
+  runBootstrap: AppBootstrapRunner;
+}
+
+const BOOTSTRAP_LOADING_VIEW_TEST_ID = "bootstrap-loading-view";
+const BOOTSTRAP_READY_VIEW_TEST_ID = "bootstrap-ready-view";
+const BOOTSTRAP_INVALID_VIEW_TEST_ID = "bootstrap-invalid-payload-view";
+
+const BOOTSTRAP_VIEW_TEST_IDS = [
+  BOOTSTRAP_LOADING_VIEW_TEST_ID,
+  BOOTSTRAP_READY_VIEW_TEST_ID,
+  BOOTSTRAP_INVALID_VIEW_TEST_ID,
+] as const;
+
+type BootstrapViewTestId = (typeof BOOTSTRAP_VIEW_TEST_IDS)[number];
+
+interface DeferredPromise<T> {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+}
+
+const createDeferredPromise = <T,>(): DeferredPromise<T> => {
+  let resolve: (value: T | PromiseLike<T>) => void = () => undefined;
+  let reject: (reason?: unknown) => void = () => undefined;
+
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return {
+    promise,
+    resolve,
+    reject,
+  };
+};
+
+const renderAppWithBootstrapRunner = (runBootstrap: AppBootstrapRunner) =>
+  render(<App runBootstrap={runBootstrap} />);
+
+const renderStrictModeAppWithBootstrapRunner = (
+  runBootstrap: AppBootstrapRunner,
+) =>
+  render(
+    <StrictMode>
+      <App runBootstrap={runBootstrap} />
+    </StrictMode>,
+  );
+
+const createPayloadWithCounts = (
+  nodeCount: number,
+  edgeCount: number,
+): GraphPayload => {
+  if (nodeCount < 1) {
+    throw new Error("nodeCount must be greater than zero");
+  }
+
+  const nodes: GraphPayload["nodes"] = Array.from(
+    { length: nodeCount },
+    (_, index) => ({
+      id: `module.node.${index}`,
+      kind: "module",
+      name: `node-${index}`,
+      module: `module.node.${index}`,
+      file_path: `src/module/node_${index}.py`,
+    }),
+  );
+
+  const edges: GraphPayload["edges"] = Array.from(
+    { length: edgeCount },
+    (_, index) => ({
+      source: nodes[index % nodeCount].id,
+      target: nodes[(index + 1) % nodeCount].id,
+      kind: "dependency",
+    }),
+  );
+
+  return { nodes, edges };
+};
+
+const expectOnlyBootstrapViewVisible = (
+  expectedViewTestId: BootstrapViewTestId,
+): void => {
+  const renderedViewTestIds = BOOTSTRAP_VIEW_TEST_IDS.filter(
+    (testId) => screen.queryByTestId(testId) !== null,
+  );
+
+  expect(renderedViewTestIds).toEqual([expectedViewTestId]);
+  expect(screen.getByTestId(expectedViewTestId)).toBeVisible();
+};
+
+const expectReadyViewPayloadCounts = (payload: GraphPayload): void => {
+  expect(screen.getByText(`Nodes: ${payload.nodes.length}`)).toBeVisible();
+  expect(screen.getByText(`Edges: ${payload.edges.length}`)).toBeVisible();
+};
+
+const expectInvalidPayloadErrorsVisible = (
+  invalidPayloadView: HTMLElement,
+  expectedErrors: readonly string[],
+): void => {
+  for (const errorMessage of expectedErrors) {
+    expect(within(invalidPayloadView).getByText(errorMessage)).toBeVisible();
+  }
+};
+
+describe("App bootstrap gating integration", () => {
+  it("enforces the App bootstrap DI props contract at compile-time", () => {
+    type AppProps = ComponentProps<typeof App>;
+
+    expectTypeOf<AppProps>().toEqualTypeOf<AppBootstrapProps>();
+  });
+
+  it("calls the injected bootstrap runner exactly once on mount", async () => {
+    const readyState: GraphBootstrapState = {
+      state: "ready",
+      payload: createPayloadWithCounts(2, 1),
+    };
+    const runBootstrap = vi
+      .fn<AppBootstrapRunner>()
+      .mockResolvedValue(readyState);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(runBootstrap).toHaveBeenCalledTimes(1);
+    });
+
+    expect(runBootstrap).toHaveBeenCalledWith();
+  });
+
+  it("runs bootstrap effectively once under StrictMode replay and reaches ready", async () => {
+    const readyPayload = createPayloadWithCounts(6, 4);
+    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "ready",
+      payload: readyPayload,
+    });
+
+    renderStrictModeAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expect(runBootstrap).toHaveBeenCalledTimes(1);
+    expectReadyViewPayloadCounts(readyPayload);
+    expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
+    expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
+  });
+
+  it("shows loading while bootstrap is pending and keeps ready/invalid views absent", async () => {
+    const pendingBootstrap = createDeferredPromise<GraphBootstrapState>();
+    const runBootstrap = vi
+      .fn<AppBootstrapRunner>()
+      .mockReturnValue(pendingBootstrap.promise);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(runBootstrap).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeVisible();
+    expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
+    expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_LOADING_VIEW_TEST_ID);
+
+    pendingBootstrap.resolve({
+      state: "invalid-payload",
+      errors: ["teardown"],
+    });
+  });
+
+  it("transitions from loading to ready when pending bootstrap resolves later", async () => {
+    const pendingBootstrap = createDeferredPromise<GraphBootstrapState>();
+    const readyPayload = createPayloadWithCounts(5, 3);
+    const runBootstrap = vi
+      .fn<AppBootstrapRunner>()
+      .mockReturnValue(pendingBootstrap.promise);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_LOADING_VIEW_TEST_ID);
+
+    pendingBootstrap.resolve({
+      state: "ready",
+      payload: readyPayload,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expectReadyViewPayloadCounts(readyPayload);
+    expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
+    expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
+  });
+
+  it("transitions from loading to invalid-payload when pending bootstrap resolves later", async () => {
+    const pendingBootstrap = createDeferredPromise<GraphBootstrapState>();
+    const propagatedErrors = [
+      "Duplicate node id: module.delayed.duplicate",
+      "Missing target node reference: module.delayed.missing_target",
+    ];
+    const runBootstrap = vi
+      .fn<AppBootstrapRunner>()
+      .mockReturnValue(pendingBootstrap.promise);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_LOADING_VIEW_TEST_ID);
+
+    pendingBootstrap.resolve({
+      state: "invalid-payload",
+      errors: propagatedErrors,
+    });
+
+    const invalidPayloadView = await screen.findByTestId(
+      BOOTSTRAP_INVALID_VIEW_TEST_ID,
+    );
+
+    expectInvalidPayloadErrorsVisible(invalidPayloadView, propagatedErrors);
+
+    expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
+    expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_INVALID_VIEW_TEST_ID);
+  });
+
+  it("shows ready view payload-derived counts using a non-4/4 payload", async () => {
+    const readyPayload = createPayloadWithCounts(3, 2);
+    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "ready",
+      payload: readyPayload,
+    });
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expectReadyViewPayloadCounts(readyPayload);
+    expect(screen.queryByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeNull();
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
+  });
+
+  it("shows invalid-payload view with all propagated errors and hides ready view", async () => {
+    const propagatedErrors = [
+      "Duplicate node id: module.utils.parse_config",
+      "Missing source node reference: module.utils.missing_source",
+      "Missing target node reference: module.pipeline.missing_target",
+    ];
+
+    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "invalid-payload",
+      errors: propagatedErrors,
+    });
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const invalidPayloadView = await screen.findByTestId(
+      BOOTSTRAP_INVALID_VIEW_TEST_ID,
+    );
+
+    expectInvalidPayloadErrorsVisible(invalidPayloadView, propagatedErrors);
+
+    expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_INVALID_VIEW_TEST_ID);
+  });
+
+  it("transitions rejected bootstrap runs into invalid-payload with normalized non-empty errors", async () => {
+    const suppressUnhandledRejection = (event: PromiseRejectionEvent): void => {
+      event.preventDefault();
+    };
+
+    window.addEventListener("unhandledrejection", suppressUnhandledRejection);
+
+    try {
+      const runBootstrap = vi
+        .fn<AppBootstrapRunner>()
+        .mockRejectedValue(new Error("fixture bootstrap failed"));
+
+      renderAppWithBootstrapRunner(runBootstrap);
+
+      const invalidPayloadView = await screen.findByTestId(
+        BOOTSTRAP_INVALID_VIEW_TEST_ID,
+      );
+
+      const normalizedErrorMessages = Array.from(
+        invalidPayloadView.querySelectorAll("p"),
+      ).map((errorNode) => errorNode.textContent?.trim() ?? "");
+
+      expect(normalizedErrorMessages.length).toBeGreaterThan(0);
+      expect(
+        normalizedErrorMessages.every((message) => message.length > 0),
+      ).toBe(true);
+      expect(screen.queryByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeNull();
+      expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
+      expectOnlyBootstrapViewVisible(BOOTSTRAP_INVALID_VIEW_TEST_ID);
+    } finally {
+      window.removeEventListener(
+        "unhandledrejection",
+        suppressUnhandledRejection,
+      );
+    }
+  });
+
+  it("keeps loading, ready, and invalid containers mutually exclusive per scenario", async () => {
+    const pendingBootstrap = createDeferredPromise<GraphBootstrapState>();
+    const loadingRunBootstrap = vi
+      .fn<AppBootstrapRunner>()
+      .mockReturnValue(pendingBootstrap.promise);
+
+    const loadingRender = renderAppWithBootstrapRunner(loadingRunBootstrap);
+
+    await waitFor(() => {
+      expect(loadingRunBootstrap).toHaveBeenCalledTimes(1);
+    });
+
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_LOADING_VIEW_TEST_ID);
+    loadingRender.unmount();
+
+    const readyRunBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "ready",
+      payload: createPayloadWithCounts(2, 1),
+    });
+
+    const readyRender = renderAppWithBootstrapRunner(readyRunBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
+    readyRender.unmount();
+
+    const invalidRunBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "invalid-payload",
+      errors: ["schema violation"],
+    });
+
+    renderAppWithBootstrapRunner(invalidRunBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_INVALID_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expectOnlyBootstrapViewVisible(BOOTSTRAP_INVALID_VIEW_TEST_ID);
+
+    pendingBootstrap.resolve({
+      state: "invalid-payload",
+      errors: ["teardown"],
+    });
+  });
+});
