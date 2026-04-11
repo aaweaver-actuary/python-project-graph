@@ -1,0 +1,11 @@
+#!/bin/sh
+
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+
+# Allow the very first bootstrap commit on main, block subsequent commits.
+if [ "$branch" = "main" ] && git rev-parse --verify HEAD >/dev/null 2>&1; then
+  echo "Direct commits to main are blocked. Create and switch to a feature branch."
+  exit 1
+fi
+
+exit 0
