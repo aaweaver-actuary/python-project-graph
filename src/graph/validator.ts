@@ -4,23 +4,23 @@ import type {
   GraphValidator,
 } from "./contracts";
 
-function validate(graphPayload: GraphPayload): GraphValidationResult {
-  const nodeIds = new Set(graphPayload.nodes.map((node) => node.id));
-  const errors: string[] = [];
+function validate(payload: GraphPayload): GraphValidationResult {
+  const knownNodeIds = new Set(payload.nodes.map(({ id }) => id));
+  const validationErrors: string[] = [];
 
-  for (const edge of graphPayload.edges) {
-    if (!nodeIds.has(edge.source)) {
-      errors.push(`Missing source node reference: ${edge.source}`);
+  for (const { source, target } of payload.edges) {
+    if (!knownNodeIds.has(source)) {
+      validationErrors.push(`Missing source node reference: ${source}`);
     }
 
-    if (!nodeIds.has(edge.target)) {
-      errors.push(`Missing target node reference: ${edge.target}`);
+    if (!knownNodeIds.has(target)) {
+      validationErrors.push(`Missing target node reference: ${target}`);
     }
   }
 
   return {
-    ok: errors.length === 0,
-    errors,
+    ok: validationErrors.length === 0,
+    errors: validationErrors,
   };
 }
 

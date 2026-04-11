@@ -6,9 +6,9 @@ import { graphValidator } from "./validator.ts";
 describe("GraphValidator missing node references", () => {
   it("rejects an edge when source node id is missing from nodes list", () => {
     const missingSourceId = "module.utils.missing_source";
-    const expectedMissingSourceError = `Missing source node reference: ${missingSourceId}`;
+    const expectedError = `Missing source node reference: ${missingSourceId}`;
 
-    const payload: GraphPayload = {
+    const graphPayload: GraphPayload = {
       nodes: [
         {
           id: "module.pipeline.run_model",
@@ -27,17 +27,17 @@ describe("GraphValidator missing node references", () => {
       ],
     };
 
-    const result = graphValidator.validate(payload);
+    const validationResult = graphValidator.validate(graphPayload);
 
-    expect(result.ok).toBe(false);
-    expect(result.errors).toEqual([expectedMissingSourceError]);
+    expect(validationResult.ok).toBe(false);
+    expect(validationResult.errors).toEqual([expectedError]);
   });
 
   it("rejects an edge when target node id is missing from nodes list", () => {
     const missingTargetId = "module.pipeline.missing_target";
-    const expectedMissingTargetError = `Missing target node reference: ${missingTargetId}`;
+    const expectedError = `Missing target node reference: ${missingTargetId}`;
 
-    const payload: GraphPayload = {
+    const graphPayload: GraphPayload = {
       nodes: [
         {
           id: "module.utils.parse_config",
@@ -56,9 +56,9 @@ describe("GraphValidator missing node references", () => {
       ],
     };
 
-    const result = graphValidator.validate(payload);
+    const validationResult = graphValidator.validate(graphPayload);
 
-    expect(result.ok).toBe(false);
-    expect(result.errors).toEqual([expectedMissingTargetError]);
+    expect(validationResult.ok).toBe(false);
+    expect(validationResult.errors).toEqual([expectedError]);
   });
 });
