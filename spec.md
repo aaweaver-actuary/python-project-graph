@@ -526,3 +526,242 @@ The graph must answer questions faster than:
 - import tracing
 
 This should remain the guiding principle for all implementation decisions.
+
+---
+
+## Implementation Readiness Addendum (Slice S1: Minimal Fully Wired)
+
+This addendum defines the first end-to-end slice for supervised TDD.
+It does not replace or reduce any product goals above.
+
+### Slice S1 Scope
+
+Build one complete user flow from data contract to interactive UI:
+
+- load a local static graph payload fixture (no backend yet)
+- validate payload shape against graph contracts
+- render nodes and directed edges in the main graph canvas
+- support click-to-select on a node
+- show a right-side detail panel for the selected node
+- highlight only immediate inbound/outbound edges for the selected node
+
+This slice proves architecture wiring and data contracts before broader feature work.
+
+### Slice S1 Non-Goals / Guardrails
+
+The following are explicitly out of scope for Slice S1:
+
+- no remote API integration
+- no filter sidebar behavior
+- no search behavior
+- no recursive expansion controls
+- no path isolation controls
+- no drag-position persistence
+- no minimap requirement
+- no advanced layout engine integration beyond a simple deterministic layout
+- no V2 overlays (ownership, semantic similarity, git history)
+
+### Slice S1 Acceptance Criteria (Explicit)
+
+#### AC-S1-01 Data Contract Ingestion
+Given a valid fixture payload with 4 nodes and 4 edges,
+when the app boots,
+then the graph canvas renders exactly 4 nodes and 4 directed edges.
+
+#### AC-S1-02 Node Selection Interaction
+Given the graph is visible,
+when the user clicks any rendered node,
+then that node becomes selected and is visually distinct from unselected nodes.
+
+#### AC-S1-03 Detail Panel Contract
+Given a selected node,
+when the detail panel is shown,
+then it displays all required fields from FR-5 for that node:
+
+- symbol name
+- symbol type
+- module path
+- file path
+- line range (if present in payload)
+- inbound dependency count
+- outbound dependency count
+
+#### AC-S1-04 Immediate Neighborhood Highlighting
+Given a selected node,
+when selection updates,
+then only immediate inbound and outbound edges of that node are highlighted.
+
+#### AC-S1-05 Invalid Payload Handling
+Given an invalid payload that fails contract validation,
+when load is attempted,
+then the app renders a non-crashing error state and does not render partial graph data.
+
+### Interfaces and Data Contracts for Slice S1
+
+Define these interfaces before implementation internals.
+
+#### Domain Contracts
+
+```typescript
+export type NodeKind =
+  | 'module'
+  | 'class'
+  | 'method'
+  | 'function'
+  | 'import'
+  | 'constant'
+  | 'variable'
+  | 'package'
+
+export type EdgeKind =
+  | 'dependency'
+  | 'imports'
+  | 'inherits'
+  | 'calls'
+  | 'contains'
+  | 'references'
+
+export interface GraphNode {
+  id: string
+  kind: NodeKind
+  name: string
+  module: string
+  file_path: string
+  line_start?: number
+  line_end?: number
+  docstring?: string
+  topological_rank?: number
+}
+
+export interface GraphEdge {
+  source: string
+  target: string
+  kind: EdgeKind
+}
+
+export interface GraphPayload {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+}
+```
+
+#### Data Source Boundary
+
+```typescript
+export interface GraphDataSource {
+  loadGraph(): Promise<GraphPayload>
+}
+```
+
+Slice S1 implementation target:
+
+- one fixture-backed adapter that implements GraphDataSource
+
+#### Validation Boundary
+
+```typescript
+export interface GraphValidationResult {
+  ok: boolean
+  errors: string[]
+}
+
+export interface GraphValidator {
+  validate(payload: GraphPayload): GraphValidationResult
+}
+```
+
+Validation rule minimum for S1:
+
+- required fields present on nodes and edges
+- node ids are unique
+- every edge source/target references an existing node id
+
+#### UI Component Contracts
+
+```typescript
+export interface GraphCanvasProps {
+  payload: GraphPayload
+  selectedNodeId: string | null
+  onSelectNode: (nodeId: string) => void
+}
+
+export interface NodeDetails {
+  id: string
+  name: string
+  kind: NodeKind
+  module: string
+  file_path: string
+  line_start?: number
+  line_end?: number
+  inboundCount: number
+  outboundCount: number
+}
+
+export interface DetailPanelProps {
+  details: NodeDetails | null
+}
+```
+
+Event/data flow contract for S1:
+
+1. GraphDataSource.loadGraph returns GraphPayload.
+2. GraphValidator.validate gates rendering.
+3. container state stores selectedNodeId.
+4. GraphCanvas emits onSelectNode(nodeId).
+5. detail model is derived from payload + selectedNodeId.
+6. DetailPanel receives derived NodeDetails.
+
+### Minimal End-to-End Slice Definition
+
+Single proving user scenario:
+
+1. App starts.
+2. Valid fixture graph loads.
+3. Graph appears with all fixture nodes/edges.
+4. User clicks node A.
+5. Node A is selected; immediate inbound/outbound edges are highlighted.
+6. Detail panel opens and shows required FR-5 fields and dependency counts.
+
+If this scenario works and tests pass, Slice S1 is complete.
+
+### Validation Plan (Supervised TDD)
+
+Use red -> green -> refactor in supervised checkpoints.
+
+#### Automated Tests (required)
+
+TDD-01 Contract validation test:
+
+- valid fixture returns ok = true and no errors
+
+TDD-02 Contract rejection test:
+
+- payload with edge to missing node returns ok = false with explicit error
+
+TDD-03 Selection derivation test:
+
+- selectedNodeId produces correct inbound/outbound counts
+
+TDD-04 Integration render test:
+
+- with valid fixture, graph node/edge counts match fixture counts
+
+TDD-05 Interaction integration test:
+
+- clicking a node updates selected state and detail panel fields
+
+#### Manual Verification (required)
+
+- launch app and confirm graph is visible on first load
+- click each node in fixture and confirm detail panel updates accordingly
+- verify highlighted edges change with selection and only include immediate neighbors
+- run with intentionally invalid fixture and confirm explicit non-crashing error state
+
+#### Definition of Done for Slice S1
+
+Slice S1 is done only when:
+
+- all AC-S1 criteria pass
+- all TDD-01 through TDD-05 automated tests pass
+- all manual verification checks pass
+- no out-of-scope items were implemented
