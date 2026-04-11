@@ -5,22 +5,37 @@ import type {
 } from "./contracts";
 
 function validate(payload: GraphPayload): GraphValidationResult {
-  const knownNodeIds = new Set(payload.nodes.map(({ id }) => id));
-  const validationErrors: string[] = [];
+  const seenNodeIds = new Set<string>();
+  const reportedDuplicateNodeIds = new Set<string>();
+  const errors: string[] = [];
 
-  for (const { source, target } of payload.edges) {
-    if (!knownNodeIds.has(source)) {
-      validationErrors.push(`Missing source node reference: ${source}`);
+  for (const { id } of payload.nodes) {
+    if (!seenNodeIds.has(id)) {
+      seenNodeIds.add(id);
+      continue;
     }
 
-    if (!knownNodeIds.has(target)) {
-      validationErrors.push(`Missing target node reference: ${target}`);
+    if (reportedDuplicateNodeIds.has(id)) {
+      continue;
+    }
+
+    reportedDuplicateNodeIds.add(id);
+    errors.push(`Duplicate node id: ${id}`);
+  }
+
+  for (const { source, target } of payload.edges) {
+    if (!seenNodeIds.has(source)) {
+      errors.push(`Missing source node reference: ${source}`);
+    }
+
+    if (!seenNodeIds.has(target)) {
+      errors.push(`Missing target node reference: ${target}`);
     }
   }
 
   return {
-    ok: validationErrors.length === 0,
-    errors: validationErrors,
+    ok: errors.length === 0,
+    errors,
   };
 }
 
