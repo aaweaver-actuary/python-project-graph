@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
+import { GraphCanvas } from "./graph/graph-canvas";
 
 export interface AppProps {
   runBootstrap: () => Promise<GraphBootstrapState>;
@@ -94,6 +95,11 @@ function App({ runBootstrap }: AppProps) {
       <section data-testid="bootstrap-ready-view">
         <p>Nodes: {bootstrapState.payload.nodes.length}</p>
         <p>Edges: {bootstrapState.payload.edges.length}</p>
+        <GraphCanvas
+          payload={bootstrapState.payload}
+          selectedNodeId={null}
+          onSelectNode={() => undefined}
+        />
       </section>
     );
   }

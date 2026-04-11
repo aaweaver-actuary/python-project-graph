@@ -8,6 +8,8 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import App from "./App";
 import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
 import type { GraphPayload } from "./graph/contracts";
+import { graphFixturePayload } from "./graph/fixture-data-source.adapter";
+import { GraphCanvas } from "./graph/graph-canvas";
 
 type AppBootstrapRunner = () => Promise<GraphBootstrapState>;
 
@@ -15,9 +17,18 @@ interface AppBootstrapProps {
   runBootstrap: AppBootstrapRunner;
 }
 
+interface GraphCanvasBoundaryProps {
+  payload: GraphPayload;
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
+}
+
 const BOOTSTRAP_LOADING_VIEW_TEST_ID = "bootstrap-loading-view";
 const BOOTSTRAP_READY_VIEW_TEST_ID = "bootstrap-ready-view";
 const BOOTSTRAP_INVALID_VIEW_TEST_ID = "bootstrap-invalid-payload-view";
+const GRAPH_CANVAS_TEST_ID = "graph-canvas";
+const GRAPH_NODE_TEST_ID = "graph-node";
+const GRAPH_EDGE_TEST_ID = "graph-edge";
 
 const BOOTSTRAP_VIEW_TEST_IDS = [
   BOOTSTRAP_LOADING_VIEW_TEST_ID,
@@ -124,6 +135,12 @@ describe("App bootstrap gating integration", () => {
     expectTypeOf<AppProps>().toEqualTypeOf<AppBootstrapProps>();
   });
 
+  it("enforces the GraphCanvas props contract at compile-time for the S1 boundary", () => {
+    type GraphCanvasProps = ComponentProps<typeof GraphCanvas>;
+
+    expectTypeOf<GraphCanvasProps>().toEqualTypeOf<GraphCanvasBoundaryProps>();
+  });
+
   it("calls the injected bootstrap runner exactly once on mount", async () => {
     const readyState: GraphBootstrapState = {
       state: "ready",
@@ -215,6 +232,97 @@ describe("App bootstrap gating integration", () => {
     expectOnlyBootstrapViewVisible(BOOTSTRAP_READY_VIEW_TEST_ID);
   });
 
+  it("renders one node and directed edge per 4/4 fixture entry with stable identity", async () => {
+    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "ready",
+      payload: graphFixturePayload,
+    });
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    const renderedNodes =
+      within(graphCanvas).getAllByTestId(GRAPH_NODE_TEST_ID);
+    expect(renderedNodes).toHaveLength(graphFixturePayload.nodes.length);
+
+    const renderedNodeIds = renderedNodes.map((nodeElement) => {
+      const nodeId = nodeElement.getAttribute("data-node-id");
+
+      expect(nodeId).not.toBeNull();
+
+      return nodeId as string;
+    });
+
+    for (const fixtureNode of graphFixturePayload.nodes) {
+      const renderedCountForId = renderedNodeIds.filter(
+        (renderedNodeId) => renderedNodeId === fixtureNode.id,
+      ).length;
+
+      expect(renderedCountForId).toBe(1);
+    }
+
+    const renderedEdges =
+      within(graphCanvas).getAllByTestId(GRAPH_EDGE_TEST_ID);
+    expect(renderedEdges).toHaveLength(graphFixturePayload.edges.length);
+
+    const renderedEdgePairs = renderedEdges.map((edgeElement) => {
+      const source = edgeElement.getAttribute("data-edge-source");
+      const target = edgeElement.getAttribute("data-edge-target");
+
+      expect(source).not.toBeNull();
+      expect(target).not.toBeNull();
+
+      return `${source as string}->${target as string}`;
+    });
+
+    for (const fixtureEdge of graphFixturePayload.edges) {
+      const expectedPair = `${fixtureEdge.source}->${fixtureEdge.target}`;
+      const renderedCountForPair = renderedEdgePairs.filter(
+        (renderedPair) => renderedPair === expectedPair,
+      ).length;
+
+      expect(renderedCountForPair).toBe(1);
+    }
+  });
+
+  it("renders a visible label for each 4/4 fixture node", async () => {
+    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "ready",
+      payload: graphFixturePayload,
+    });
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    for (const fixtureNode of graphFixturePayload.nodes) {
+      expect(within(graphCanvas).getByText(fixtureNode.name)).toBeVisible();
+    }
+  });
+
+  it("renders a visible direction label for each 4/4 fixture edge", async () => {
+    const runBootstrap = vi.fn<AppBootstrapRunner>().mockResolvedValue({
+      state: "ready",
+      payload: graphFixturePayload,
+    });
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    for (const fixtureEdge of graphFixturePayload.edges) {
+      expect(
+        within(graphCanvas).getByText(
+          `${fixtureEdge.source} -> ${fixtureEdge.target}`,
+        ),
+      ).toBeVisible();
+    }
+  });
+
   it("transitions from loading to invalid-payload when pending bootstrap resolves later", async () => {
     const pendingBootstrap = createDeferredPromise<GraphBootstrapState>();
     const propagatedErrors = [
@@ -288,7 +396,28 @@ describe("App bootstrap gating integration", () => {
     expectInvalidPayloadErrorsVisible(invalidPayloadView, propagatedErrors);
 
     expect(screen.queryByTestId(BOOTSTRAP_READY_VIEW_TEST_ID)).toBeNull();
+    expect(screen.queryByTestId(GRAPH_CANVAS_TEST_ID)).toBeNull();
     expectOnlyBootstrapViewVisible(BOOTSTRAP_INVALID_VIEW_TEST_ID);
+  });
+
+  it("keeps graph canvas absent while bootstrap is loading", async () => {
+    const pendingBootstrap = createDeferredPromise<GraphBootstrapState>();
+    const runBootstrap = vi
+      .fn<AppBootstrapRunner>()
+      .mockReturnValue(pendingBootstrap.promise);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    await waitFor(() => {
+      expect(screen.getByTestId(BOOTSTRAP_LOADING_VIEW_TEST_ID)).toBeVisible();
+    });
+
+    expect(screen.queryByTestId(GRAPH_CANVAS_TEST_ID)).toBeNull();
+
+    pendingBootstrap.resolve({
+      state: "invalid-payload",
+      errors: ["teardown"],
+    });
   });
 
   it("transitions rejected bootstrap runs into invalid-payload with normalized non-empty errors", async () => {
