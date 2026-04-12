@@ -8,6 +8,12 @@ import {
   type GraphFilterState,
 } from './graph/filters';
 import { GraphCanvas } from './graph/graph-canvas';
+import {
+  computeNeighborhood,
+  type NeighborhoodConfig,
+  type NeighborhoodDirection,
+  type NeighborhoodDepth,
+} from './graph/neighborhood';
 import { searchGraphNodes } from './graph/search';
 import { deriveSelectedNodeDetails, DetailPanel } from './graph/node-details';
 
@@ -104,6 +110,12 @@ function App({ runBootstrap }: AppProps) {
     requestId: number;
     nodeId: string;
   }>();
+  const [neighborhoodConfig, setNeighborhoodConfig] =
+    useState<NeighborhoodConfig | null>(null);
+  const [neighborhoodDirection, setNeighborhoodDirection] =
+    useState<NeighborhoodDirection>('both');
+  const [neighborhoodDepth, setNeighborhoodDepth] =
+    useState<NeighborhoodDepth>(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -165,13 +177,21 @@ function App({ runBootstrap }: AppProps) {
     return searchGraphNodes(filteredPayload, searchQuery);
   }, [filteredPayload, searchQuery]);
 
+  const neighborhoodPayload = useMemo(() => {
+    if (filteredPayload === null || neighborhoodConfig === null) {
+      return filteredPayload;
+    }
+    return computeNeighborhood(filteredPayload, neighborhoodConfig);
+  }, [filteredPayload, neighborhoodConfig]);
+
   switch (bootstrapState.state) {
     case 'loading':
       return (
         <section data-testid="bootstrap-loading-view">Loading graph...</section>
       );
     case 'ready': {
-      const payload = filteredPayload ?? bootstrapState.payload;
+      const payload =
+        neighborhoodPayload ?? filteredPayload ?? bootstrapState.payload;
       const selectedNodeDetails = deriveSelectedNodeDetails(
         payload,
         effectiveSelectedNodeId,
@@ -224,29 +244,29 @@ function App({ runBootstrap }: AppProps) {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
-                <button
-                  type="button"
-                  data-testid="graph-search-focus-first"
-                  disabled={searchResults.length === 0}
-                  onClick={() => {
-                    const firstSearchMatch = searchResults[0];
+              <button
+                type="button"
+                data-testid="graph-search-focus-first"
+                disabled={searchResults.length === 0}
+                onClick={() => {
+                  const firstSearchMatch = searchResults[0];
 
-                    if (!firstSearchMatch) {
-                      return;
-                    }
+                  if (!firstSearchMatch) {
+                    return;
+                  }
 
-                    setSelectedNodeId(firstSearchMatch.id);
-                    setFocusRequest((currentRequest) => ({
-                      requestId:
-                        (typeof currentRequest?.requestId === 'number'
-                          ? currentRequest.requestId
-                          : 0) + 1,
-                      nodeId: firstSearchMatch.id,
-                    }));
-                  }}
-                >
-                  Focus first match
-                </button>
+                  setSelectedNodeId(firstSearchMatch.id);
+                  setFocusRequest((currentRequest) => ({
+                    requestId:
+                      (typeof currentRequest?.requestId === 'number'
+                        ? currentRequest.requestId
+                        : 0) + 1,
+                    nodeId: firstSearchMatch.id,
+                  }));
+                }}
+              >
+                Focus first match
+              </button>
               <p data-testid="graph-search-results-count">
                 Matches: {searchResults.length}
               </p>
@@ -287,6 +307,110 @@ function App({ runBootstrap }: AppProps) {
                     {kind}
                   </label>
                 ))}
+              </fieldset>
+
+              <fieldset>
+                <legend>Neighborhood</legend>
+                <fieldset>
+                  <legend>Direction</legend>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-direction"
+                      data-testid="neighborhood-direction-upstream"
+                      checked={neighborhoodDirection === 'upstream'}
+                      onChange={() => setNeighborhoodDirection('upstream')}
+                    />
+                    upstream
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-direction"
+                      data-testid="neighborhood-direction-downstream"
+                      checked={neighborhoodDirection === 'downstream'}
+                      onChange={() => setNeighborhoodDirection('downstream')}
+                    />
+                    downstream
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-direction"
+                      data-testid="neighborhood-direction-both"
+                      checked={neighborhoodDirection === 'both'}
+                      onChange={() => setNeighborhoodDirection('both')}
+                    />
+                    both
+                  </label>
+                </fieldset>
+                <fieldset>
+                  <legend>Depth</legend>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-depth"
+                      data-testid="neighborhood-depth-1"
+                      checked={neighborhoodDepth === 1}
+                      onChange={() => setNeighborhoodDepth(1)}
+                    />
+                    1
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-depth"
+                      data-testid="neighborhood-depth-2"
+                      checked={neighborhoodDepth === 2}
+                      onChange={() => setNeighborhoodDepth(2)}
+                    />
+                    2
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-depth"
+                      data-testid="neighborhood-depth-3"
+                      checked={neighborhoodDepth === 3}
+                      onChange={() => setNeighborhoodDepth(3)}
+                    />
+                    3
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="neighborhood-depth"
+                      data-testid="neighborhood-depth-all"
+                      checked={neighborhoodDepth === 'all'}
+                      onChange={() => setNeighborhoodDepth('all')}
+                    />
+                    all
+                  </label>
+                </fieldset>
+                <button
+                  type="button"
+                  data-testid="neighborhood-focus-btn"
+                  disabled={effectiveSelectedNodeId === null}
+                  onClick={() => {
+                    if (effectiveSelectedNodeId !== null) {
+                      setNeighborhoodConfig({
+                        anchorNodeId: effectiveSelectedNodeId,
+                        direction: neighborhoodDirection,
+                        depth: neighborhoodDepth,
+                      });
+                    }
+                  }}
+                >
+                  Focus Neighborhood
+                </button>
+                <button
+                  type="button"
+                  data-testid="neighborhood-clear-btn"
+                  disabled={neighborhoodConfig === null}
+                  onClick={() => setNeighborhoodConfig(null)}
+                >
+                  Clear Neighborhood
+                </button>
               </fieldset>
             </aside>
 
