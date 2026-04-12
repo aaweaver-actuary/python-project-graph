@@ -55,6 +55,10 @@ interface GraphCanvasBoundaryProps {
   payload: GraphPayload;
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  focusRequest?: {
+    requestId: string | number;
+    nodeId: string;
+  };
 }
 
 interface NodeDetailsBoundaryProps {

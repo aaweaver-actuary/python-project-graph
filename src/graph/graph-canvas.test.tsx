@@ -4,8 +4,9 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-const { reactFlowPropsSpy, wu03LabelPrefixByKind } = vi.hoisted(() => ({
+const { reactFlowPropsSpy, reactFlowFitViewSpy, wu03LabelPrefixByKind } = vi.hoisted(() => ({
   reactFlowPropsSpy: vi.fn(),
+  reactFlowFitViewSpy: vi.fn(),
   wu03LabelPrefixByKind: {
     module: '[WU03-MODULE]',
     class: '[WU03-CLASS]',
@@ -30,6 +31,9 @@ vi.mock('@xyflow/react', async () => {
 
       return React.createElement(actual.ReactFlow, props);
     },
+    useReactFlow: () => ({
+      fitView: reactFlowFitViewSpy,
+    }),
   };
 });
 
@@ -305,6 +309,91 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
 
         expect(within(graphCanvas).getByText(expectedLabelPattern)).toBeVisible();
       }
+    });
+  });
+
+  describe('GraphCanvas focus viewport request contract (WU-05)', () => {
+    it('calls React Flow fitView with deterministic focus options when a new focus request arrives', () => {
+      reactFlowFitViewSpy.mockClear();
+      const onSelectNode = vi.fn<(nodeId: string) => void>();
+      const renderResult = render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={onSelectNode}
+        />,
+      );
+
+      expect(reactFlowFitViewSpy).not.toHaveBeenCalled();
+
+      renderResult.rerender(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={onSelectNode}
+          focusRequest={{
+            requestId: 'focus-request-1',
+            nodeId: 'module.utils.parse_config',
+          }}
+        />,
+      );
+
+      expect(reactFlowFitViewSpy).toHaveBeenCalledTimes(1);
+      expect(reactFlowFitViewSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          nodes: [expect.objectContaining({ id: 'module.utils.parse_config' })],
+          duration: expect.any(Number),
+          padding: expect.any(Number),
+        }),
+      );
+    });
+
+    it('does not replay viewport focus when the requestId is unchanged across rerenders', () => {
+      reactFlowFitViewSpy.mockClear();
+      const onSelectNode = vi.fn<(nodeId: string) => void>();
+      const focusRequest = {
+        requestId: 'focus-request-stable',
+        nodeId: 'module.utils.parse_config',
+      };
+      const renderResult = render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={onSelectNode}
+          focusRequest={focusRequest}
+        />,
+      );
+
+      expect(reactFlowFitViewSpy).toHaveBeenCalledTimes(1);
+
+      renderResult.rerender(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={onSelectNode}
+          focusRequest={focusRequest}
+        />,
+      );
+
+      expect(reactFlowFitViewSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores focus requests that target a node id outside the current payload', () => {
+      reactFlowFitViewSpy.mockClear();
+
+      render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+          focusRequest={{
+            requestId: 'focus-request-missing',
+            nodeId: 'node.missing.from.payload',
+          }}
+        />,
+      );
+
+      expect(reactFlowFitViewSpy).not.toHaveBeenCalled();
     });
   });
 });
