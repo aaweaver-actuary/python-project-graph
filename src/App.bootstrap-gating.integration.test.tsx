@@ -64,6 +64,7 @@ const DETAIL_INBOUND_COUNT_TEST_ID = "detail-inbound-count";
 const DETAIL_OUTBOUND_COUNT_TEST_ID = "detail-outbound-count";
 const GRAPH_NODE_SELECTED_CLASS = "graph-node--selected";
 const GRAPH_NODE_SELECTED_FONT_WEIGHT = "700";
+const GRAPH_EDGE_HIGHLIGHTED_CLASS = "graph-edge--highlighted";
 const GRID_TEMPLATE_COLUMNS_NONE_VALUE = "none";
 
 const BOOTSTRAP_VIEW_TEST_IDS = [
@@ -183,6 +184,20 @@ const getGraphNodeElementById = (
   return nodeElement as HTMLElement;
 };
 
+const getGraphEdgeBySourceTarget = (
+  graphCanvas: HTMLElement,
+  source: string,
+  target: string,
+): HTMLElement => {
+  const edgeElement = graphCanvas.querySelector(
+    `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="${source}"][data-edge-target="${target}"]`,
+  );
+
+  expect(edgeElement).not.toBeNull();
+
+  return edgeElement as HTMLElement;
+};
+
 const expectGraphNodeSelectionVisualState = (
   nodeElement: HTMLElement,
   expectedSelected: boolean,
@@ -207,6 +222,24 @@ const expectGraphNodeSelectionVisualState = (
   });
 
   expect(nodeElement).not.toHaveClass(GRAPH_NODE_SELECTED_CLASS);
+};
+
+const expectEdgeHighlightedState = (
+  edgeElement: HTMLElement,
+  expectedHighlighted: boolean,
+): void => {
+  expect(edgeElement).toHaveAttribute(
+    "data-highlighted",
+    expectedHighlighted ? "true" : "false",
+  );
+
+  if (expectedHighlighted) {
+    expect(edgeElement).toHaveClass(GRAPH_EDGE_HIGHLIGHTED_CLASS);
+
+    return;
+  }
+
+  expect(edgeElement).not.toHaveClass(GRAPH_EDGE_HIGHLIGHTED_CLASS);
 };
 
 const expectSelectedNodeCount = (
@@ -901,7 +934,7 @@ describe("App bootstrap gating integration", () => {
       within(graphCanvas).getAllByTestId(GRAPH_EDGE_TEST_ID);
 
     for (const edgeElement of allEdgesBefore) {
-      expect(edgeElement).toHaveAttribute("data-highlighted", "false");
+      expectEdgeHighlightedState(edgeElement, false);
     }
 
     const parseConfigNode = getGraphNodeElementById(
@@ -911,32 +944,34 @@ describe("App bootstrap gating integration", () => {
 
     fireEvent.click(parseConfigNode);
 
-    const inboundEdge = graphCanvas.querySelector(
-      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.utils"][data-edge-target="module.utils.parse_config"]`,
-    ) as HTMLElement;
+    const inboundEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.utils",
+      "module.utils.parse_config",
+    );
 
-    const outboundEdge = graphCanvas.querySelector(
-      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.utils.parse_config"][data-edge-target="module.pipeline.run_model"]`,
-    ) as HTMLElement;
+    const outboundEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.utils.parse_config",
+      "module.pipeline.run_model",
+    );
 
-    expect(inboundEdge).toHaveAttribute("data-highlighted", "true");
-    expect(inboundEdge).toHaveClass("graph-edge--highlighted");
+    expectEdgeHighlightedState(inboundEdge, true);
+    expectEdgeHighlightedState(outboundEdge, true);
 
-    expect(outboundEdge).toHaveAttribute("data-highlighted", "true");
-    expect(outboundEdge).toHaveClass("graph-edge--highlighted");
+    const unrelatedContainsEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.pipeline",
+      "module.pipeline.run_model",
+    );
 
-    const unrelatedContainsEdge = graphCanvas.querySelector(
-      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.pipeline"][data-edge-target="module.pipeline.run_model"]`,
-    ) as HTMLElement;
+    const unrelatedImportsEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.utils",
+      "module.pipeline",
+    );
 
-    const unrelatedImportsEdge = graphCanvas.querySelector(
-      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.utils"][data-edge-target="module.pipeline"]`,
-    ) as HTMLElement;
-
-    expect(unrelatedContainsEdge).toHaveAttribute("data-highlighted", "false");
-    expect(unrelatedContainsEdge).not.toHaveClass("graph-edge--highlighted");
-
-    expect(unrelatedImportsEdge).toHaveAttribute("data-highlighted", "false");
-    expect(unrelatedImportsEdge).not.toHaveClass("graph-edge--highlighted");
+    expectEdgeHighlightedState(unrelatedContainsEdge, false);
+    expectEdgeHighlightedState(unrelatedImportsEdge, false);
   });
 });
