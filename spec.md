@@ -17,6 +17,7 @@ This is a **typed dependency exploration interface** for code structure and flow
 ## Primary Goals
 
 ### 1. Repository dependency exploration
+
 Allow a developer to quickly answer:
 
 - What depends on this symbol?
@@ -26,6 +27,7 @@ Allow a developer to quickly answer:
 - Where are utility/helper layers concentrated?
 
 ### 2. Visual structural understanding
+
 Provide an immediate visual representation of:
 
 - modules
@@ -38,6 +40,7 @@ Provide an immediate visual representation of:
 and their dependency relationships.
 
 ### 3. Interactive investigation
+
 Support direct manipulation and exploration:
 
 - drag nodes
@@ -49,6 +52,7 @@ Support direct manipulation and exploration:
 - expand upstream/downstream paths
 
 ### 4. Future extensibility
+
 Architecture should support future V2 features:
 
 - duplicate helper detection
@@ -71,6 +75,7 @@ The following are explicitly out of scope for V1:
 - AI-generated architecture suggestions
 - duplicate function similarity scoring
 - full AST inspection UI
+- hand-drawn/pencil-style border effects for boxes/tables are deferred post-release and tracked in GitHub issue #5
 
 ---
 
@@ -277,6 +282,7 @@ Optional if available:
 Required filters:
 
 ### by node type
+
 Multi-select:
 
 - modules
@@ -287,12 +293,15 @@ Multi-select:
 - imports
 
 ### by module/package
+
 Text search + dropdown
 
 ### by file path
+
 substring match
 
 ### isolated node suppression
+
 Hide disconnected nodes
 
 ---
@@ -302,12 +311,15 @@ Hide disconnected nodes
 Required exploration actions:
 
 ### upstream (1 hop)
+
 Show direct dependencies
 
 ### downstream (1 hop)
+
 Show direct consumers
 
 ### expand recursively
+
 User-selectable depth:
 
 ```text
@@ -318,6 +330,7 @@ all
 ```
 
 ### isolate path
+
 Show only selected node and reachable neighbors
 
 This is critical.
@@ -412,26 +425,26 @@ src/
 
 ```typescript
 export interface GraphNode {
-  id: string
-  kind: string
-  name: string
-  module: string
-  file_path: string
-  line_start?: number
-  line_end?: number
-  docstring?: string
-  topological_rank?: number
+  id: string;
+  kind: string;
+  name: string;
+  module: string;
+  file_path: string;
+  line_start?: number;
+  line_end?: number;
+  docstring?: string;
+  topological_rank?: number;
 }
 
 export interface GraphEdge {
-  source: string
-  target: string
-  kind: string
+  source: string;
+  target: string;
+  kind: string;
 }
 
 export interface GraphPayload {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }
 ```
 
@@ -487,6 +500,7 @@ If not, V1 has failed regardless of visual quality.
 Reserved future capabilities:
 
 ### semantic similarity edges
+
 Possible duplicate helpers
 
 ```text
@@ -494,16 +508,20 @@ SIMILAR_TO
 ```
 
 ### ownership overlays
+
 By developer / team
 
 ### temporal overlays
+
 Git commit frequency
 
 ### architectural warnings
+
 Circular dependency risk
 layer violations
 
 ### code preview
+
 Inline source snippet panel
 
 ---
@@ -564,16 +582,19 @@ The following are explicitly out of scope for Slice S1:
 ### Slice S1 Acceptance Criteria (Explicit)
 
 #### AC-S1-01 Data Contract Ingestion
+
 Given a valid fixture payload with 4 nodes and 4 edges,
 when the app boots,
 then the graph canvas renders exactly 4 nodes and 4 directed edges.
 
 #### AC-S1-02 Node Selection Interaction
+
 Given the graph is visible,
 when the user clicks any rendered node,
 then that node becomes selected and is visually distinct from unselected nodes.
 
 #### AC-S1-03 Detail Panel Contract
+
 Given a selected node,
 when the detail panel is shown,
 then it displays all required fields from FR-5 for that node:
@@ -587,11 +608,13 @@ then it displays all required fields from FR-5 for that node:
 - outbound dependency count
 
 #### AC-S1-04 Immediate Neighborhood Highlighting
+
 Given a selected node,
 when selection updates,
 then only immediate inbound and outbound edges of that node are highlighted.
 
 #### AC-S1-05 Invalid Payload Handling
+
 Given an invalid payload that fails contract validation,
 when load is attempted,
 then the app renders a non-crashing error state and does not render partial graph data.
@@ -611,7 +634,7 @@ export type NodeKind =
   | 'import'
   | 'constant'
   | 'variable'
-  | 'package'
+  | 'package';
 
 export type EdgeKind =
   | 'dependency'
@@ -619,29 +642,29 @@ export type EdgeKind =
   | 'inherits'
   | 'calls'
   | 'contains'
-  | 'references'
+  | 'references';
 
 export interface GraphNode {
-  id: string
-  kind: NodeKind
-  name: string
-  module: string
-  file_path: string
-  line_start?: number
-  line_end?: number
-  docstring?: string
-  topological_rank?: number
+  id: string;
+  kind: NodeKind;
+  name: string;
+  module: string;
+  file_path: string;
+  line_start?: number;
+  line_end?: number;
+  docstring?: string;
+  topological_rank?: number;
 }
 
 export interface GraphEdge {
-  source: string
-  target: string
-  kind: EdgeKind
+  source: string;
+  target: string;
+  kind: EdgeKind;
 }
 
 export interface GraphPayload {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }
 ```
 
@@ -649,7 +672,7 @@ export interface GraphPayload {
 
 ```typescript
 export interface GraphDataSource {
-  loadGraph(): Promise<GraphPayload>
+  loadGraph(): Promise<GraphPayload>;
 }
 ```
 
@@ -661,12 +684,12 @@ Slice S1 implementation target:
 
 ```typescript
 export interface GraphValidationResult {
-  ok: boolean
-  errors: string[]
+  ok: boolean;
+  errors: string[];
 }
 
 export interface GraphValidator {
-  validate(payload: GraphPayload): GraphValidationResult
+  validate(payload: GraphPayload): GraphValidationResult;
 }
 ```
 
@@ -680,25 +703,25 @@ Validation rule minimum for S1:
 
 ```typescript
 export interface GraphCanvasProps {
-  payload: GraphPayload
-  selectedNodeId: string | null
-  onSelectNode: (nodeId: string) => void
+  payload: GraphPayload;
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 }
 
 export interface NodeDetails {
-  id: string
-  name: string
-  kind: NodeKind
-  module: string
-  file_path: string
-  line_start?: number
-  line_end?: number
-  inboundCount: number
-  outboundCount: number
+  id: string;
+  name: string;
+  kind: NodeKind;
+  module: string;
+  file_path: string;
+  line_start?: number;
+  line_end?: number;
+  inboundCount: number;
+  outboundCount: number;
 }
 
 export interface DetailPanelProps {
-  details: NodeDetails | null
+  details: NodeDetails | null;
 }
 ```
 

@@ -1,6 +1,7 @@
 # What remaining work units are required to fully complete the project and what dependencies do they have
 
 ## Answer
+
 - Purpose: this is the canonical one-shot completion roadmap for the remaining project work.
 - Baseline already complete:
   - bootstrap and contract validation flow
@@ -26,6 +27,7 @@
   - WU-07 depends on WU-01 and WU-02.
   - WU-08 depends on WU-03, WU-04, WU-05, WU-06, and WU-07.
   - WU-09 depends on WU-08 for final signoff (CI scaffolding can start after WU-01).
+  - Deferred post-release backlog item (GitHub issue #5 pencil-style borders) depends on WU-03 and follows WU-09 release signoff.
 
 - Work units and done criteria:
   - WU-01 Graph engine foundation
@@ -87,6 +89,7 @@
   - Project Reviewer reports no unresolved gaps
 
 ## Freshness
+
 - Status: verified against repository
 - Last verified: 2026-04-12
 - Verified from:
