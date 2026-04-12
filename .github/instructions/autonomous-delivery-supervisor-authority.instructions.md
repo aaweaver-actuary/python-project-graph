@@ -18,17 +18,19 @@ applyTo: '**'
 
 ## Supervisor Responsibilities
 
-- The supervisor or orchestrator owns end-to-end workflow continuity.
-- The supervisor or orchestrator must enforce this rule across all delegated agents.
-- The supervisor or orchestrator must proactively sequence or parallelize work to keep progress continuous.
-- The supervisor or orchestrator should resolve routine ambiguity autonomously and document assumptions in the final report.
-- At the beginning of every delivery cycle, the supervisor or orchestrator must dispatch an issue-tracking step that compares current open GitHub issues to the canonical roadmap memory and routes missing coverage through an issue-to-plan integration agent.
+- The Project Manager owns end-to-end workflow continuity and the bigger-picture user outcome.
+- The Project Manager must enforce this rule across all delegated agents and coding supervisors.
+- The Project Manager must proactively sequence or parallelize work to keep progress continuous.
+- The Project Manager should resolve routine ambiguity autonomously and document assumptions in the final report.
+- At the beginning of every delivery cycle, the Project Manager must dispatch an issue-tracking step that compares current open GitHub issues to the canonical roadmap memory and routes missing coverage through an issue-to-plan integration agent.
+- The Project Manager must treat open GitHub issues as a live requirements channel during execution, re-run issue tracking after each completed slice and immediately before the final response, and route requirement deltas into the spec and plan before more implementation proceeds.
 
 ## Response Authority
 
 - Delegated subagents must not send user-facing final responses.
-- Delegated subagents report progress, outputs, risks, and blockers only to the supervisor or orchestrator.
-- Only the supervisor or orchestrator may send the final response to the user.
+- Delegated subagents report progress, outputs, risks, and blockers only to their supervising agent.
+- Coding supervisors must report to the Project Manager and must not send user-facing final responses.
+- Only the Project Manager may send the final response to the user.
 
 ## Allowed Exceptions
 
@@ -42,6 +44,7 @@ A task workflow is complete only when:
 - all user-requested tasks are finished,
 - all roadmap work units in `.memories/What remaining work units are required to fully complete the project and what dependencies do they have.md` are complete,
 - all release gates in `.memories/What production-ready gates must pass before release.md` are satisfied,
+- a final Issue Tracker pass reports no missing, stale, or unresolved open issues,
 - relevant tests and quality checks have been run,
 - no delegated steps remain,
 - no risks or open questions remain unresolved,
