@@ -11,6 +11,12 @@ applyTo: "**"
 - If `.memories/` does not exist, create it and create `.memories/00index.md` and `.memories/00template.md`.
 - Treat `.memories/00index.md` as the entry point to repository memory.
 
+## Source Of Truth Policy
+- `.memories/` at the repository root is the only authoritative memory store for this repository.
+- Do not use `/memories/repo/`, `/memories/session/`, or any other external memory namespace as a source for repository facts, plans, or workflow decisions.
+- If memory content exists outside `.memories/`, verify it against the repository, migrate the verified result into `.memories/`, and treat external copies as non-authoritative.
+- If conflicting memory content exists in multiple places, `.memories/` wins after re-verification and refresh.
+
 ## Memory Structure
 - Keep each memory as one atomic markdown file that answers one question or records one durable fact.
 - Name memory files as plain-language questions or declarative statements, such as `How do we validate work in this project.md` or `Precommit blocks direct commits to main and runs staged checks.md`.
@@ -30,11 +36,13 @@ applyTo: "**"
 - Agents other than Memory Finder and Memory Researcher must not read or write `.memories/` directly.
 - Use Memory Finder when you need an answer from existing repository memories.
 - Use Memory Researcher when a memory is missing, stale, or needs to be created or updated.
+- Memory Finder and Memory Researcher must treat `.memories/` as canonical and must not rely on `/memories/repo/` for repository truth.
 
 ## Recording Process
 - When an agent discovers a durable repository fact, workflow rule, architecture quirk, or useful command, emit a memory candidate instead of editing `.memories/` directly.
 - Memory Finder should answer from existing memory when possible. If the answer is missing, uncertain, or stale according to its `## Freshness` section, it should escalate to Memory Researcher.
 - Memory Researcher must verify the current answer against the repository, write or update the atomic memory file using `00template.md`, and refresh `00index.md` before returning the result.
+- When migrating memory from non-canonical stores, Memory Researcher should note the migration in the updated memory and remove or deprecate duplicate external copies.
 
 ## Quality Bar
 - Prefer short, high-signal memories over long narrative documents.

@@ -39,6 +39,8 @@ applyTo: "**"
 A task workflow is complete only when:
 
 - all user-requested tasks are finished,
+- all roadmap work units in `.memories/What remaining work units are required to fully complete the project and what dependencies do they have.md` are complete,
+- all release gates in `.memories/What production-ready gates must pass before release.md` are satisfied,
 - relevant tests and quality checks have been run,
 - no delegated steps remain,
 - no risks or open questions remain unresolved,

@@ -16,12 +16,15 @@
 
 ## Completion Gate
 
-A workflow is complete only when all requested tasks are finished, checks are run, no delegated steps remain, and no risks or open questions remain unresolved.
+A workflow is complete only when all requested tasks are finished, all roadmap work units in `.memories/What remaining work units are required to fully complete the project and what dependencies do they have.md` are complete, all release gates in `.memories/What production-ready gates must pass before release.md` are satisfied, checks are run, no delegated steps remain, and no risks or open questions remain unresolved.
 
 If genuinely blocked by missing access, missing required external input, irreconcilable requirement conflicts, or potentially destructive actions requiring approval, report the blocker with cause, impact, and the minimum required user input to proceed.
 
 ## Repository Memory Culture
 
 - Start each workflow by ensuring `.memories/` exists at the repository root and that `.memories/00index.md` and `.memories/00template.md` are present.
+- Treat `.memories/` as the single source of truth for repository memory.
+- Do not use `/memories/repo/` or other non-repository memory namespaces as authoritative sources for repository facts.
+- If duplicate memory exists outside `.memories/`, re-verify and migrate it into `.memories/`, then remove or deprecate the duplicate copy.
 - Route repository-memory lookup questions through Memory Finder and repository-memory writes or updates through Memory Researcher.
 - When you discover durable repository facts, workflow quirks, or useful commands, surface them as memory candidates so Memory Researcher can verify and record them.
