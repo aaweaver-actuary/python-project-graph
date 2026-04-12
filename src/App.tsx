@@ -8,6 +8,7 @@ import {
   type GraphFilterState,
 } from './graph/filters';
 import { GraphCanvas } from './graph/graph-canvas';
+import { searchGraphNodes } from './graph/search';
 import { deriveSelectedNodeDetails, DetailPanel } from './graph/node-details';
 
 export interface AppProps {
@@ -98,6 +99,7 @@ function App({ runBootstrap }: AppProps) {
   const [filterState, setFilterState] = useState<GraphFilterState>(
     createInitialFilterState,
   );
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -151,6 +153,14 @@ function App({ runBootstrap }: AppProps) {
     return selectionStillVisible ? selectedNodeId : null;
   }, [selectedNodeId, filteredPayload]);
 
+  const searchResults = useMemo(() => {
+    if (filteredPayload === null) {
+      return [];
+    }
+
+    return searchGraphNodes(filteredPayload, searchQuery);
+  }, [filteredPayload, searchQuery]);
+
   switch (bootstrapState.state) {
     case 'loading':
       return (
@@ -202,6 +212,27 @@ function App({ runBootstrap }: AppProps) {
                   }))
                 }
               />
+
+              <label htmlFor="graph-search-input">Search</label>
+              <input
+                id="graph-search-input"
+                data-testid="graph-search-input"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+              <button
+                type="button"
+                data-testid="graph-search-focus-first"
+                onClick={() => {
+                  const firstResult = searchResults[0];
+                  setSelectedNodeId(firstResult ? firstResult.id : null);
+                }}
+              >
+                Focus first match
+              </button>
+              <p data-testid="graph-search-results-count">
+                Matches: {searchResults.length}
+              </p>
 
               <label>
                 <input

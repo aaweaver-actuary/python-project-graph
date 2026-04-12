@@ -1025,4 +1025,28 @@ describe("App bootstrap gating integration", () => {
     });
   });
 
+
+  it("focuses the first search match and opens detail panel", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const searchInput = within(readyView).getByTestId("graph-search-input");
+    const focusFirstButton = within(readyView).getByTestId(
+      "graph-search-focus-first",
+    );
+
+    fireEvent.change(searchInput, { target: { value: "parse" } });
+
+    expect(within(readyView).getByTestId("graph-search-results-count")).toHaveTextContent(
+      "Matches: 1",
+    );
+
+    fireEvent.click(focusFirstButton);
+
+    const detailPanel = await screen.findByTestId(DETAIL_PANEL_TEST_ID);
+    expectDetailFieldValue(detailPanel, DETAIL_NAME_TEST_ID, "parse_config");
+  });
+
 });
