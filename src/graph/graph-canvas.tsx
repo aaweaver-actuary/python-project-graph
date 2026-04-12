@@ -1,10 +1,10 @@
 import {
   BaseEdge,
   Handle,
+  MarkerType,
   Position,
   ReactFlow,
   ReactFlowProvider,
-  MarkerType,
   getStraightPath,
   type Edge,
   type EdgeProps,
@@ -199,10 +199,7 @@ export function GraphCanvas({
   }));
 
   return (
-    <section
-      data-testid="graph-canvas"
-      style={{ width: "100%", height: "24rem" }}
-    >
+    <section data-testid="graph-canvas" style={{ width: "100%", height: "24rem" }}>
       <ReactFlowProvider
         initialWidth={GRAPH_CANVAS_WIDTH}
         initialHeight={GRAPH_CANVAS_HEIGHT}
