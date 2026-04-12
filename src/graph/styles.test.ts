@@ -34,17 +34,12 @@ describe('node visual semantics contract extension (WU03-A)', () => {
 
   it('defines non-empty icon and label prefix semantics for every supported node kind', () => {
     for (const kind of REQUIRED_KINDS) {
-      const semantics = getNodeKindVisualSemantics(kind) as Record<
-        string,
-        unknown
-      >;
+      const semantics = getNodeKindVisualSemantics(kind);
 
       expect(semantics.iconToken).toEqual(expect.any(String));
-      expect((semantics.iconToken as string).trim().length).toBeGreaterThan(0);
+      expect(semantics.iconToken.trim().length).toBeGreaterThan(0);
       expect(semantics.labelPrefix).toEqual(expect.any(String));
-      expect((semantics.labelPrefix as string).trim().length).toBeGreaterThan(
-        0,
-      );
+      expect(semantics.labelPrefix.trim().length).toBeGreaterThan(0);
     }
   });
 
