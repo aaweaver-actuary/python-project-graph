@@ -974,4 +974,55 @@ describe("App bootstrap gating integration", () => {
     expectEdgeHighlightedState(unrelatedContainsEdge, false);
     expectEdgeHighlightedState(unrelatedImportsEdge, false);
   });
+
+  it("filters nodes by module query from the sidebar", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const moduleFilterInput = within(readyView).getByTestId(
+      "module-filter-input",
+    );
+
+    fireEvent.change(moduleFilterInput, { target: { value: "pipeline" } });
+
+    await waitFor(() => {
+      expect(within(readyView).getByText("Nodes: 2")).toBeVisible();
+      expect(within(readyView).getByText("Edges: 1")).toBeVisible();
+    });
+  });
+
+  it("hides disconnected nodes when the sidebar toggle is enabled", async () => {
+    const payloadWithDisconnectedNode: GraphPayload = {
+      nodes: [
+        ...graphFixturePayload.nodes,
+        {
+          id: "module.constants.PI",
+          kind: "constant",
+          name: "PI",
+          module: "module.constants",
+          file_path: "src/module/constants.py",
+        },
+      ],
+      edges: graphFixturePayload.edges,
+    };
+    const runBootstrap = createReadyBootstrapRunner(payloadWithDisconnectedNode);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const hideDisconnectedToggle = within(readyView).getByTestId(
+      "hide-disconnected-filter",
+    );
+
+    expect(within(readyView).getByText("Nodes: 5")).toBeVisible();
+
+    fireEvent.click(hideDisconnectedToggle);
+
+    await waitFor(() => {
+      expect(within(readyView).getByText("Nodes: 4")).toBeVisible();
+    });
+  });
+
 });
