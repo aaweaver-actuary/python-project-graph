@@ -1,7 +1,7 @@
 ---
-name: "Autonomous Delivery And Supervisor-Only User Response"
-description: "Use for all project workflows under deadline pressure. Enforces end-to-end completion, ignores milestone check-in cadence, and requires delegated subagents to report only to the supervisor."
-applyTo: "**"
+name: 'Autonomous Delivery And Supervisor-Only User Response'
+description: 'Use for all project workflows under deadline pressure. Enforces end-to-end completion, ignores milestone check-in cadence, and requires delegated subagents to report only to the supervisor.'
+applyTo: '**'
 ---
 
 # Autonomous Delivery And Supervisor Response Authority

@@ -1,12 +1,13 @@
 ---
-description: "Use for all agent workflows under deadline pressure. Enforces autonomous execution without user check-ins until the full requested task set is complete."
-name: "Autonomous Delivery No Check-Ins"
-applyTo: "**"
+description: 'Use for all agent workflows under deadline pressure. Enforces autonomous execution without user check-ins until the full requested task set is complete.'
+name: 'Autonomous Delivery No Check-Ins'
+applyTo: '**'
 ---
 
 # Autonomous Delivery Under Time Pressure
 
 ## Rule
+
 - Treat delivery speed and continuity as hard requirements during active agent workflows.
 - Do not pause to check in with the user while work is in progress.
 - Do not stop after a single milestone when other requested tasks still remain.
@@ -16,6 +17,7 @@ applyTo: "**"
 - Continue working until the full requested task set is complete.
 
 ## Supervisor Responsibilities
+
 - The supervisor or orchestrator owns end-to-end workflow continuity.
 - The supervisor or orchestrator must enforce this rule across all delegated agents.
 - The supervisor or orchestrator must proactively sequence or parallelize work to keep progress continuous.
@@ -23,16 +25,20 @@ applyTo: "**"
 - At the beginning of every delivery cycle, the supervisor or orchestrator must dispatch an issue-tracking step that compares current open GitHub issues to the canonical roadmap memory and routes missing coverage through an issue-to-plan integration agent.
 
 ## Response Authority
+
 - Delegated subagents must not send user-facing final responses.
 - Delegated subagents report progress, outputs, risks, and blockers only to the supervisor or orchestrator.
 - Only the supervisor or orchestrator may send the final response to the user.
 
 ## Allowed Exceptions
+
 - Ask the user only when genuinely blocked by missing access, missing required external inputs, irreconcilable requirement conflicts, or potentially destructive actions requiring approval.
 - Use the question-asking tool for user check-ins when needed, but only as a last resort after all autonomous options are exhausted.
 
 ## Completion Standard
+
 A task workflow is complete only when:
+
 - all user-requested tasks are finished,
 - all roadmap work units in `.memories/What remaining work units are required to fully complete the project and what dependencies do they have.md` are complete,
 - all release gates in `.memories/What production-ready gates must pass before release.md` are satisfied,
