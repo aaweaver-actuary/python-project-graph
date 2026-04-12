@@ -20,6 +20,7 @@ applyTo: "**"
 - The supervisor or orchestrator must enforce this rule across all delegated agents.
 - The supervisor or orchestrator must proactively sequence or parallelize work to keep progress continuous.
 - The supervisor or orchestrator should resolve routine ambiguity autonomously and document assumptions in the final report.
+- At the beginning of every delivery cycle, the supervisor or orchestrator must dispatch an issue-tracking step that compares current open GitHub issues to the canonical roadmap memory and routes missing coverage through an issue-to-plan integration agent.
 
 ## Response Authority
 - Delegated subagents must not send user-facing final responses.

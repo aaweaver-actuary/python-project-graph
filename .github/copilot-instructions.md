@@ -28,3 +28,8 @@ If genuinely blocked by missing access, missing required external input, irrecon
 - If duplicate memory exists outside `.memories/`, re-verify and migrate it into `.memories/`, then remove or deprecate the duplicate copy.
 - Route repository-memory lookup questions through Memory Finder and repository-memory writes or updates through Memory Researcher.
 - When you discover durable repository facts, workflow quirks, or useful commands, surface them as memory candidates so Memory Researcher can verify and record them.
+
+## Issue To Plan Synchronization
+
+- At the start of every supervisor delivery cycle, dispatch an issue tracker step to compare open GitHub issues against the canonical roadmap memory (`.memories/What remaining work units are required to fully complete the project and what dependencies do they have.md`).
+- If any open issue is not represented in plan coverage, dispatch an issue-to-plan integration step to convert it into explicit roadmap representation before selecting the next implementation work item.
