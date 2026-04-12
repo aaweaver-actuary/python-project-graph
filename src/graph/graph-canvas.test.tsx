@@ -4,20 +4,21 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-const { reactFlowPropsSpy, reactFlowFitViewSpy, wu03LabelPrefixByKind } = vi.hoisted(() => ({
-  reactFlowPropsSpy: vi.fn(),
-  reactFlowFitViewSpy: vi.fn(),
-  wu03LabelPrefixByKind: {
-    module: '[WU03-MODULE]',
-    class: '[WU03-CLASS]',
-    method: '[WU03-METHOD]',
-    function: '[WU03-FUNCTION]',
-    constant: '[WU03-CONSTANT]',
-    import: '[WU03-IMPORT]',
-    variable: '[WU03-VARIABLE]',
-    package: '[WU03-PACKAGE]',
-  } as const,
-}));
+const { reactFlowPropsSpy, reactFlowFitViewSpy, wu03LabelPrefixByKind } =
+  vi.hoisted(() => ({
+    reactFlowPropsSpy: vi.fn(),
+    reactFlowFitViewSpy: vi.fn(),
+    wu03LabelPrefixByKind: {
+      module: '[WU03-MODULE]',
+      class: '[WU03-CLASS]',
+      method: '[WU03-METHOD]',
+      function: '[WU03-FUNCTION]',
+      constant: '[WU03-CONSTANT]',
+      import: '[WU03-IMPORT]',
+      variable: '[WU03-VARIABLE]',
+      package: '[WU03-PACKAGE]',
+    } as const,
+  }));
 
 vi.mock('@xyflow/react', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
@@ -307,7 +308,9 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
           `${escapeRegExp(expectedPrefix)}.*${escapeRegExp(node.name)}`,
         );
 
-        expect(within(graphCanvas).getByText(expectedLabelPattern)).toBeVisible();
+        expect(
+          within(graphCanvas).getByText(expectedLabelPattern),
+        ).toBeVisible();
       }
     });
   });
@@ -394,6 +397,54 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
       );
 
       expect(reactFlowFitViewSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GraphCanvas position override contract (WU-07)', () => {
+    it('applies positionOverrides to nodes passed to ReactFlow', () => {
+      reactFlowPropsSpy.mockClear();
+
+      const overrides = {
+        'module.utils.parse_config': { x: 500, y: 500 },
+      };
+
+      render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+          positionOverrides={overrides}
+        />,
+      );
+
+      const lastProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        nodes: Array<{ id: string; position: { x: number; y: number } }>;
+      };
+
+      const overriddenNode = lastProps.nodes.find(
+        (n) => n.id === 'module.utils.parse_config',
+      );
+
+      expect(overriddenNode?.position).toEqual({ x: 500, y: 500 });
+    });
+
+    it('passes onNodeDragStop to ReactFlow when onNodePositionChange is provided', () => {
+      reactFlowPropsSpy.mockClear();
+
+      render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+          onNodePositionChange={vi.fn()}
+        />,
+      );
+
+      const lastProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        onNodeDragStop?: unknown;
+      };
+
+      expect(lastProps.onNodeDragStop).toBeInstanceOf(Function);
     });
   });
 });

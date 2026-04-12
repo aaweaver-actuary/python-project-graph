@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { GraphBootstrapState } from './graph/bootstrap.contracts';
 import type { NodeKind } from './graph/contracts';
@@ -8,6 +8,12 @@ import {
   type GraphFilterState,
 } from './graph/filters';
 import { GraphCanvas } from './graph/graph-canvas';
+import type { ManualPositionOverrides } from './graph/layout-persistence';
+import {
+  clearPositionOverrides,
+  loadPositionOverrides,
+  savePositionOverrides,
+} from './graph/layout-persistence';
 import {
   computeNeighborhood,
   type NeighborhoodConfig,
@@ -116,6 +122,24 @@ function App({ runBootstrap }: AppProps) {
     useState<NeighborhoodDirection>('both');
   const [neighborhoodDepth, setNeighborhoodDepth] =
     useState<NeighborhoodDepth>(1);
+  const [manualOverrides, setManualOverrides] =
+    useState<ManualPositionOverrides>(loadPositionOverrides);
+
+  const handleNodePositionChange = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      setManualOverrides((prev) => {
+        const next = { ...prev, [nodeId]: position };
+        savePositionOverrides(next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleResetLayout = useCallback(() => {
+    clearPositionOverrides();
+    setManualOverrides({});
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -412,6 +436,13 @@ function App({ runBootstrap }: AppProps) {
                   Clear Neighborhood
                 </button>
               </fieldset>
+              <button
+                type="button"
+                data-testid="reset-layout-btn"
+                onClick={handleResetLayout}
+              >
+                Reset Layout
+              </button>
             </aside>
 
             <GraphCanvas
@@ -419,6 +450,8 @@ function App({ runBootstrap }: AppProps) {
               selectedNodeId={effectiveSelectedNodeId}
               onSelectNode={setSelectedNodeId}
               focusRequest={focusRequest}
+              positionOverrides={manualOverrides}
+              onNodePositionChange={handleNodePositionChange}
             />
             <aside data-testid="detail-panel-rail">
               <DetailPanel details={selectedNodeDetails} />

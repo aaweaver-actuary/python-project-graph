@@ -13,10 +13,12 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
 import { computeDeterministicLayout } from './layout';
+import type { ManualPositionOverrides } from './layout-persistence';
+import { applyPositionOverrides } from './layout-persistence';
 import { getNodeKindVisualSemantics } from './styles';
 
 export interface GraphCanvasProps {
@@ -27,6 +29,11 @@ export interface GraphCanvasProps {
     requestId: string | number;
     nodeId: string;
   };
+  positionOverrides?: ManualPositionOverrides;
+  onNodePositionChange?: (
+    nodeId: string,
+    position: { x: number; y: number },
+  ) => void;
 }
 
 interface GraphNodeData {
@@ -225,6 +232,8 @@ export function GraphCanvas({
   selectedNodeId,
   onSelectNode,
   focusRequest,
+  positionOverrides,
+  onNodePositionChange,
 }: GraphCanvasProps) {
   const layout = computeDeterministicLayout(payload, {
     nodeWidth: GRAPH_NODE_WIDTH,
@@ -234,10 +243,14 @@ export function GraphCanvas({
     maxLrColumnsBeforeFallback: 8,
   });
 
+  const effectivePositions = positionOverrides
+    ? applyPositionOverrides(layout.positions, positionOverrides)
+    : layout.positions;
+
   const nodes: Node<GraphNodeDataRecord>[] = payload.nodes.map((node) => ({
     id: node.id,
     type: GRAPH_NODE_TYPE,
-    position: layout.positions[node.id] ?? { x: 0, y: 0 },
+    position: effectivePositions[node.id] ?? { x: 0, y: 0 },
     initialWidth: GRAPH_NODE_WIDTH,
     initialHeight: GRAPH_NODE_HEIGHT,
     data: {
@@ -263,6 +276,13 @@ export function GraphCanvas({
     }),
   );
 
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      onNodePositionChange?.(node.id, node.position);
+    },
+    [onNodePositionChange],
+  );
+
   return (
     <section
       data-testid="graph-canvas"
@@ -278,6 +298,7 @@ export function GraphCanvas({
           nodeTypes={graphNodeTypes}
           edgeTypes={graphEdgeTypes}
           fitView
+          onNodeDragStop={onNodePositionChange ? handleNodeDragStop : undefined}
         >
           <ViewportFocusController
             focusRequest={focusRequest}
