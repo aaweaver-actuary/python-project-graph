@@ -223,9 +223,9 @@ function App({ runBootstrap }: AppProps) {
               <button
                 type="button"
                 data-testid="graph-search-focus-first"
+                disabled={searchResults.length === 0}
                 onClick={() => {
-                  const firstResult = searchResults[0];
-                  setSelectedNodeId(firstResult ? firstResult.id : null);
+                  setSelectedNodeId(searchResults[0].id);
                 }}
               >
                 Focus first match

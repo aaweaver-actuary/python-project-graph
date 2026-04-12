@@ -109,14 +109,13 @@ const GraphCanvasCompatibilityLayer = ({
   onSelectNode: GraphCanvasProps['onSelectNode'];
 }) => (
   <div style={{ position: 'absolute', inset: 0 }}>
-    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, fontSize: '1px' }}>
+    <div style={{ position: 'absolute', inset: 0, fontSize: '1px', pointerEvents: 'none' }}>
       {nodes.map((node) => {
         const isSelected = selectedNodeId === node.id;
 
         return (
-          <button
+          <div
             key={node.id}
-            type="button"
             data-testid="graph-node"
             data-node-id={node.id}
             data-selected={isSelected ? 'true' : 'false'}
@@ -128,9 +127,8 @@ const GraphCanvasCompatibilityLayer = ({
               padding: 0,
               fontWeight: isSelected ? 700 : 400,
             }}
-            aria-label={node.name}
             onClick={() => onSelectNode(node.id)}
-          ></button>
+          ></div>
         );
       })}
     </div>

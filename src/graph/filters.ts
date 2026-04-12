@@ -81,12 +81,9 @@ export function applyGraphFilters(
     hasConnectedEdge(node.id, filteredEdges),
   );
 
-  const connectedNodeIds = new Set(connectedNodes.map((node) => node.id));
 
   return {
     nodes: connectedNodes,
-    edges: filteredEdges.filter(
-      (edge) => connectedNodeIds.has(edge.source) && connectedNodeIds.has(edge.target),
-    ),
+    edges: filteredEdges,
   };
 }
