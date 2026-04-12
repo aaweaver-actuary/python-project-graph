@@ -43,12 +43,22 @@ export function GraphCanvas({
         const edgeIdentity = `${source}->${target}`;
         const edgeDirectionLabel = `${source} -> ${target}`;
 
+        const isHighlighted =
+          selectedNodeId !== null &&
+          (source === selectedNodeId || target === selectedNodeId);
+        const highlightedState = isHighlighted ? "true" : "false";
+        const highlightedClassName = isHighlighted
+          ? "graph-edge--highlighted"
+          : undefined;
+
         return (
           <div
             key={`${edgeIdentity}-${index}`}
             data-testid="graph-edge"
             data-edge-source={source}
             data-edge-target={target}
+            data-highlighted={highlightedState}
+            className={highlightedClassName}
           >
             {edgeDirectionLabel}
           </div>

@@ -64,6 +64,7 @@ const DETAIL_INBOUND_COUNT_TEST_ID = "detail-inbound-count";
 const DETAIL_OUTBOUND_COUNT_TEST_ID = "detail-outbound-count";
 const GRAPH_NODE_SELECTED_CLASS = "graph-node--selected";
 const GRAPH_NODE_SELECTED_FONT_WEIGHT = "700";
+const GRAPH_EDGE_HIGHLIGHTED_CLASS = "graph-edge--highlighted";
 const GRID_TEMPLATE_COLUMNS_NONE_VALUE = "none";
 
 const BOOTSTRAP_VIEW_TEST_IDS = [
@@ -183,6 +184,20 @@ const getGraphNodeElementById = (
   return nodeElement as HTMLElement;
 };
 
+const getGraphEdgeBySourceTarget = (
+  graphCanvas: HTMLElement,
+  source: string,
+  target: string,
+): HTMLElement => {
+  const edgeElement = graphCanvas.querySelector(
+    `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="${source}"][data-edge-target="${target}"]`,
+  );
+
+  expect(edgeElement).not.toBeNull();
+
+  return edgeElement as HTMLElement;
+};
+
 const expectGraphNodeSelectionVisualState = (
   nodeElement: HTMLElement,
   expectedSelected: boolean,
@@ -207,6 +222,24 @@ const expectGraphNodeSelectionVisualState = (
   });
 
   expect(nodeElement).not.toHaveClass(GRAPH_NODE_SELECTED_CLASS);
+};
+
+const expectEdgeHighlightedState = (
+  edgeElement: HTMLElement,
+  expectedHighlighted: boolean,
+): void => {
+  expect(edgeElement).toHaveAttribute(
+    "data-highlighted",
+    expectedHighlighted ? "true" : "false",
+  );
+
+  if (expectedHighlighted) {
+    expect(edgeElement).toHaveClass(GRAPH_EDGE_HIGHLIGHTED_CLASS);
+
+    return;
+  }
+
+  expect(edgeElement).not.toHaveClass(GRAPH_EDGE_HIGHLIGHTED_CLASS);
 };
 
 const expectSelectedNodeCount = (
@@ -887,5 +920,58 @@ describe("App bootstrap gating integration", () => {
       state: "invalid-payload",
       errors: ["teardown"],
     });
+  });
+
+  it("highlights only immediate neighbor edges when a node is clicked (AC-S1-04)", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    const allEdgesBefore =
+      within(graphCanvas).getAllByTestId(GRAPH_EDGE_TEST_ID);
+
+    for (const edgeElement of allEdgesBefore) {
+      expectEdgeHighlightedState(edgeElement, false);
+    }
+
+    const parseConfigNode = getGraphNodeElementById(
+      graphCanvas,
+      "module.utils.parse_config",
+    );
+
+    fireEvent.click(parseConfigNode);
+
+    const inboundEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.utils",
+      "module.utils.parse_config",
+    );
+
+    const outboundEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.utils.parse_config",
+      "module.pipeline.run_model",
+    );
+
+    expectEdgeHighlightedState(inboundEdge, true);
+    expectEdgeHighlightedState(outboundEdge, true);
+
+    const unrelatedContainsEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.pipeline",
+      "module.pipeline.run_model",
+    );
+
+    const unrelatedImportsEdge = getGraphEdgeBySourceTarget(
+      graphCanvas,
+      "module.utils",
+      "module.pipeline",
+    );
+
+    expectEdgeHighlightedState(unrelatedContainsEdge, false);
+    expectEdgeHighlightedState(unrelatedImportsEdge, false);
   });
 });
