@@ -1,4 +1,4 @@
-import type { GraphPayload } from "./contracts";
+import type { GraphPayload } from './contracts';
 
 export interface GraphCanvasProps {
   payload: GraphPayload;
@@ -17,9 +17,9 @@ export function GraphCanvas({
     <section data-testid="graph-canvas">
       {nodes.map((node) => {
         const isSelected = selectedNodeId === node.id;
-        const selectedState = isSelected ? "true" : "false";
+        const selectedState = isSelected ? 'true' : 'false';
         const selectedClassName = isSelected
-          ? "graph-node--selected"
+          ? 'graph-node--selected'
           : undefined;
         const selectedFontWeight = isSelected ? 700 : 400;
 
@@ -46,9 +46,9 @@ export function GraphCanvas({
         const isHighlighted =
           selectedNodeId !== null &&
           (source === selectedNodeId || target === selectedNodeId);
-        const highlightedState = isHighlighted ? "true" : "false";
+        const highlightedState = isHighlighted ? 'true' : 'false';
         const highlightedClassName = isHighlighted
-          ? "graph-edge--highlighted"
+          ? 'graph-edge--highlighted'
           : undefined;
 
         return (
