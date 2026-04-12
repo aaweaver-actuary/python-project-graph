@@ -13,7 +13,7 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 
 import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
 import { computeDeterministicLayout } from './layout';
@@ -60,50 +60,54 @@ const GRAPH_NODE_HEIGHT = 52;
 const FOCUS_ANIMATION_DURATION = 300;
 const FOCUS_PADDING = 0.2;
 
-const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
-  const selectedFontWeight = data.isSelected ? 700 : 400;
-  const visualSemantics = getNodeKindVisualSemantics(data.node.kind);
-  const displayLabel = `${visualSemantics.labelPrefix}${data.node.name}`;
+const GraphCanvasNode = memo(
+  ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
+    const selectedFontWeight = data.isSelected ? 700 : 400;
+    const visualSemantics = getNodeKindVisualSemantics(data.node.kind);
+    const displayLabel = `${visualSemantics.labelPrefix}${data.node.name}`;
 
-  return (
-    <>
-      <Handle type="target" position={Position.Left} />
-      <div
-        style={{
-          width: `${GRAPH_NODE_WIDTH}px`,
-          minHeight: `${visualSemantics.minHeight}px`,
-          boxSizing: 'border-box',
-          border: `1px ${visualSemantics.borderStyle} currentColor`,
-          borderRadius: visualSemantics.borderRadius,
-          background: 'white',
-          padding: '0.5rem 0.75rem',
-          fontWeight: selectedFontWeight,
-        }}
-        onClick={() => data.onSelectNode(data.node.id)}
-      >
-        {displayLabel}
-      </div>
-      <Handle type="source" position={Position.Right} />
-    </>
-  );
-};
+    return (
+      <>
+        <Handle type="target" position={Position.Left} />
+        <div
+          style={{
+            width: `${GRAPH_NODE_WIDTH}px`,
+            minHeight: `${visualSemantics.minHeight}px`,
+            boxSizing: 'border-box',
+            border: `1px ${visualSemantics.borderStyle} currentColor`,
+            borderRadius: visualSemantics.borderRadius,
+            background: 'white',
+            padding: '0.5rem 0.75rem',
+            fontWeight: selectedFontWeight,
+          }}
+          onClick={() => data.onSelectNode(data.node.id)}
+        >
+          {displayLabel}
+        </div>
+        <Handle type="source" position={Position.Right} />
+      </>
+    );
+  },
+);
 
-const GraphCanvasEdge = ({
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  markerEnd,
-}: EdgeProps<Edge<GraphEdgeDataRecord>>) => {
-  const [edgePath] = getStraightPath({
+const GraphCanvasEdge = memo(
+  ({
     sourceX,
     sourceY,
     targetX,
     targetY,
-  });
+    markerEnd,
+  }: EdgeProps<Edge<GraphEdgeDataRecord>>) => {
+    const [edgePath] = getStraightPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+    });
 
-  return <BaseEdge path={edgePath} markerEnd={markerEnd} />;
-};
+    return <BaseEdge path={edgePath} markerEnd={markerEnd} />;
+  },
+);
 
 const graphNodeTypes = {
   [GRAPH_NODE_TYPE]: GraphCanvasNode,
