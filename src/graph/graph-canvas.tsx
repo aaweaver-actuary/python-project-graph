@@ -48,6 +48,7 @@ const GRAPH_NODE_HEIGHT = 52;
 const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
   const selectedFontWeight = data.isSelected ? 700 : 400;
   const visualSemantics = getNodeKindVisualSemantics(data.node.kind);
+  const displayLabel = `${visualSemantics.labelPrefix}${data.node.name}`;
 
   return (
     <>
@@ -65,7 +66,7 @@ const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
         }}
         onClick={() => data.onSelectNode(data.node.id)}
       >
-        {data.node.name}
+        {displayLabel}
       </div>
       <Handle type="source" position={Position.Right} />
     </>

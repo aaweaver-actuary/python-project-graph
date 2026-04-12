@@ -100,6 +100,10 @@ function App({ runBootstrap }: AppProps) {
     createInitialFilterState,
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [focusRequest, setFocusRequest] = useState<{
+    requestId: number;
+    nodeId: string;
+  }>();
 
   useEffect(() => {
     let isMounted = true;
@@ -220,16 +224,29 @@ function App({ runBootstrap }: AppProps) {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
-              <button
-                type="button"
-                data-testid="graph-search-focus-first"
-                disabled={searchResults.length === 0}
-                onClick={() => {
-                  setSelectedNodeId(searchResults[0].id);
-                }}
-              >
-                Focus first match
-              </button>
+                <button
+                  type="button"
+                  data-testid="graph-search-focus-first"
+                  disabled={searchResults.length === 0}
+                  onClick={() => {
+                    const firstSearchMatch = searchResults[0];
+
+                    if (!firstSearchMatch) {
+                      return;
+                    }
+
+                    setSelectedNodeId(firstSearchMatch.id);
+                    setFocusRequest((currentRequest) => ({
+                      requestId:
+                        (typeof currentRequest?.requestId === 'number'
+                          ? currentRequest.requestId
+                          : 0) + 1,
+                      nodeId: firstSearchMatch.id,
+                    }));
+                  }}
+                >
+                  Focus first match
+                </button>
               <p data-testid="graph-search-results-count">
                 Matches: {searchResults.length}
               </p>
@@ -277,6 +294,7 @@ function App({ runBootstrap }: AppProps) {
               payload={payload}
               selectedNodeId={effectiveSelectedNodeId}
               onSelectNode={setSelectedNodeId}
+              focusRequest={focusRequest}
             />
             <aside data-testid="detail-panel-rail">
               <DetailPanel details={selectedNodeDetails} />
