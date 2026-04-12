@@ -109,7 +109,7 @@ const GraphCanvasCompatibilityLayer = ({
   onSelectNode: GraphCanvasProps['onSelectNode'];
 }) => (
   <div style={{ position: 'absolute', inset: 0 }}>
-    <div style={{ position: 'absolute', inset: 0, fontSize: '1px', pointerEvents: 'none' }}>
+    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, fontSize: '1px', pointerEvents: 'none' }}>
       {nodes.map((node) => {
         const isSelected = selectedNodeId === node.id;
 

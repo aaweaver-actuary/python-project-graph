@@ -81,7 +81,6 @@ export function applyGraphFilters(
     hasConnectedEdge(node.id, filteredEdges),
   );
 
-
   return {
     nodes: connectedNodes,
     edges: filteredEdges,
