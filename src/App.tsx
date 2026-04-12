@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
 import { GraphCanvas } from "./graph/graph-canvas";
+import { deriveSelectedNodeDetails, DetailPanel } from "./graph/node-details";
 
 export interface AppProps {
   runBootstrap: () => Promise<GraphBootstrapState>;
@@ -108,16 +109,31 @@ function App({ runBootstrap }: AppProps) {
       );
     case "ready": {
       const { payload } = bootstrapState;
+      const selectedNodeDetails = deriveSelectedNodeDetails(
+        payload,
+        selectedNodeId,
+      );
 
       return (
         <section data-testid="bootstrap-ready-view">
           <p>Nodes: {payload.nodes.length}</p>
           <p>Edges: {payload.edges.length}</p>
-          <GraphCanvas
-            payload={payload}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={setSelectedNodeId}
-          />
+          <section
+            data-testid="ready-layout"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(18rem, 28rem)",
+            }}
+          >
+            <GraphCanvas
+              payload={payload}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+            />
+            <aside data-testid="detail-panel-rail">
+              <DetailPanel details={selectedNodeDetails} />
+            </aside>
+          </section>
         </section>
       );
     }
