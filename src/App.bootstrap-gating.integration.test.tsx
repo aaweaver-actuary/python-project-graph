@@ -11,6 +11,33 @@ import {
 import { StrictMode, type ComponentProps } from "react";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
+const { wu03LabelPrefixByKind } = vi.hoisted(() => ({
+  wu03LabelPrefixByKind: {
+    module: "[WU03-MODULE]",
+    class: "[WU03-CLASS]",
+    method: "[WU03-METHOD]",
+    function: "[WU03-FUNCTION]",
+    constant: "[WU03-CONSTANT]",
+    import: "[WU03-IMPORT]",
+    variable: "[WU03-VARIABLE]",
+    package: "[WU03-PACKAGE]",
+  } as const,
+}));
+
+vi.mock("./graph/styles", async () => {
+  const actual =
+    await vi.importActual<typeof import("./graph/styles")>("./graph/styles");
+
+  return {
+    ...actual,
+    getNodeKindVisualSemantics: (kind: keyof typeof wu03LabelPrefixByKind) => ({
+      ...actual.getNodeKindVisualSemantics(kind),
+      iconToken: `mock-icon:${kind}`,
+      labelPrefix: wu03LabelPrefixByKind[kind],
+    }),
+  };
+});
+
 import App from "./App";
 import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
 import type { GraphPayload } from "./graph/contracts";
@@ -114,6 +141,13 @@ const createReadyBootstrapRunner = (payload: GraphPayload) =>
     state: "ready",
     payload,
   });
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getWu03DeterministicLabelPrefix = (
+  node: GraphPayload["nodes"][number],
+): string => wu03LabelPrefixByKind[node.kind];
 
 const createPayloadWithCounts = (
   nodeCount: number,
@@ -517,17 +551,24 @@ describe("App bootstrap gating integration", () => {
     }
   });
 
-  it("renders a visible label for each 4/4 fixture node", async () => {
-    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+  describe("WU03-A prefixed label rendering", () => {
+    it("renders labels including deterministic prefix+name for each 4/4 fixture node", async () => {
+      const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
 
-    renderAppWithBootstrapRunner(runBootstrap);
+      renderAppWithBootstrapRunner(runBootstrap);
 
-    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
-    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+      const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+      const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
 
-    for (const fixtureNode of graphFixturePayload.nodes) {
-      expect(within(graphCanvas).getByText(fixtureNode.name)).toBeVisible();
-    }
+      for (const fixtureNode of graphFixturePayload.nodes) {
+        const expectedPrefix = getWu03DeterministicLabelPrefix(fixtureNode);
+        const expectedLabelPattern = new RegExp(
+          `${escapeRegExp(expectedPrefix)}.*${escapeRegExp(fixtureNode.name)}`,
+        );
+
+        expect(within(graphCanvas).getByText(expectedLabelPattern)).toBeVisible();
+      }
+    });
   });
 
   it("renders a visible direction label for each 4/4 fixture edge", async () => {
