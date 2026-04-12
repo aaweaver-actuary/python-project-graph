@@ -6,12 +6,14 @@ import {
   ReactFlow,
   ReactFlowProvider,
   getStraightPath,
+  useReactFlow,
   type Edge,
   type EdgeProps,
   type Node,
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useEffect, useRef } from 'react';
 
 import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
 import { computeDeterministicLayout } from './layout';
@@ -21,6 +23,10 @@ export interface GraphCanvasProps {
   payload: GraphPayload;
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  focusRequest?: {
+    requestId: string | number;
+    nodeId: string;
+  };
 }
 
 interface GraphNodeData {
@@ -44,6 +50,8 @@ const GRAPH_CANVAS_WIDTH = 960;
 const GRAPH_CANVAS_HEIGHT = 384;
 const GRAPH_NODE_WIDTH = 176;
 const GRAPH_NODE_HEIGHT = 52;
+const FOCUS_ANIMATION_DURATION = 300;
+const FOCUS_PADDING = 0.2;
 
 const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
   const selectedFontWeight = data.isSelected ? 700 : 400;
@@ -110,7 +118,15 @@ const GraphCanvasCompatibilityLayer = ({
   onSelectNode: GraphCanvasProps['onSelectNode'];
 }) => (
   <div style={{ position: 'absolute', inset: 0 }}>
-    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, fontSize: '1px', pointerEvents: 'none' }}>
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        fontSize: '1px',
+        pointerEvents: 'none',
+      }}
+    >
       {nodes.map((node) => {
         const isSelected = selectedNodeId === node.id;
 
@@ -165,10 +181,50 @@ const GraphCanvasCompatibilityLayer = ({
   </div>
 );
 
+function ViewportFocusController({
+  focusRequest,
+  payload,
+}: {
+  focusRequest: GraphCanvasProps['focusRequest'];
+  payload: GraphPayload;
+}) {
+  const { fitView } = useReactFlow();
+  const lastProcessedRequestId = useRef<string | number | undefined>(undefined);
+
+  useEffect(() => {
+    if (!focusRequest) {
+      return;
+    }
+
+    if (focusRequest.requestId === lastProcessedRequestId.current) {
+      return;
+    }
+
+    const nodeExists = payload.nodes.some(
+      (node) => node.id === focusRequest.nodeId,
+    );
+
+    if (!nodeExists) {
+      return;
+    }
+
+    lastProcessedRequestId.current = focusRequest.requestId;
+
+    fitView({
+      nodes: [{ id: focusRequest.nodeId }],
+      duration: FOCUS_ANIMATION_DURATION,
+      padding: FOCUS_PADDING,
+    });
+  }, [focusRequest, payload.nodes, fitView]);
+
+  return null;
+}
+
 export function GraphCanvas({
   payload,
   selectedNodeId,
   onSelectNode,
+  focusRequest,
 }: GraphCanvasProps) {
   const layout = computeDeterministicLayout(payload, {
     nodeWidth: GRAPH_NODE_WIDTH,
@@ -191,22 +247,27 @@ export function GraphCanvas({
     },
   }));
 
-  const edges: Edge<GraphEdgeDataRecord>[] = payload.edges.map((edge, index) => ({
-    id: `${edge.source}->${edge.target}-${index}`,
-    type: GRAPH_EDGE_TYPE,
-    source: edge.source,
-    target: edge.target,
-    markerEnd: { type: MarkerType.ArrowClosed },
-    data: {
-      edge,
-      isHighlighted:
-        selectedNodeId !== null &&
-        (edge.source === selectedNodeId || edge.target === selectedNodeId),
-    },
-  }));
+  const edges: Edge<GraphEdgeDataRecord>[] = payload.edges.map(
+    (edge, index) => ({
+      id: `${edge.source}->${edge.target}-${index}`,
+      type: GRAPH_EDGE_TYPE,
+      source: edge.source,
+      target: edge.target,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      data: {
+        edge,
+        isHighlighted:
+          selectedNodeId !== null &&
+          (edge.source === selectedNodeId || edge.target === selectedNodeId),
+      },
+    }),
+  );
 
   return (
-    <section data-testid="graph-canvas" style={{ width: '100%', height: '24rem' }}>
+    <section
+      data-testid="graph-canvas"
+      style={{ width: '100%', height: '24rem' }}
+    >
       <ReactFlowProvider
         initialWidth={GRAPH_CANVAS_WIDTH}
         initialHeight={GRAPH_CANVAS_HEIGHT}
@@ -218,6 +279,10 @@ export function GraphCanvas({
           edgeTypes={graphEdgeTypes}
           fitView
         >
+          <ViewportFocusController
+            focusRequest={focusRequest}
+            payload={payload}
+          />
           <GraphCanvasCompatibilityLayer
             nodes={payload.nodes}
             edges={payload.edges}
