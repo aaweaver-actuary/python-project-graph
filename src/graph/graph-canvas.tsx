@@ -15,6 +15,7 @@ import '@xyflow/react/dist/style.css';
 
 import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
 import { computeDeterministicLayout } from './layout';
+import { getNodeKindVisualSemantics } from './styles';
 
 export interface GraphCanvasProps {
   payload: GraphPayload;
@@ -46,6 +47,7 @@ const GRAPH_NODE_HEIGHT = 52;
 
 const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
   const selectedFontWeight = data.isSelected ? 700 : 400;
+  const visualSemantics = getNodeKindVisualSemantics(data.node.kind);
 
   return (
     <>
@@ -53,10 +55,10 @@ const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
       <div
         style={{
           width: `${GRAPH_NODE_WIDTH}px`,
-          minHeight: `${GRAPH_NODE_HEIGHT}px`,
+          minHeight: `${visualSemantics.minHeight}px`,
           boxSizing: 'border-box',
-          border: '1px solid currentColor',
-          borderRadius: '0.5rem',
+          border: `1px ${visualSemantics.borderStyle} currentColor`,
+          borderRadius: visualSemantics.borderRadius,
           background: 'white',
           padding: '0.5rem 0.75rem',
           fontWeight: selectedFontWeight,
