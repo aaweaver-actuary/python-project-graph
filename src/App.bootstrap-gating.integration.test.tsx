@@ -888,4 +888,55 @@ describe("App bootstrap gating integration", () => {
       errors: ["teardown"],
     });
   });
+
+  it("highlights only immediate neighbor edges when a node is clicked (AC-S1-04)", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    const allEdgesBefore =
+      within(graphCanvas).getAllByTestId(GRAPH_EDGE_TEST_ID);
+
+    for (const edgeElement of allEdgesBefore) {
+      expect(edgeElement).toHaveAttribute("data-highlighted", "false");
+    }
+
+    const parseConfigNode = getGraphNodeElementById(
+      graphCanvas,
+      "module.utils.parse_config",
+    );
+
+    fireEvent.click(parseConfigNode);
+
+    const inboundEdge = graphCanvas.querySelector(
+      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.utils"][data-edge-target="module.utils.parse_config"]`,
+    ) as HTMLElement;
+
+    const outboundEdge = graphCanvas.querySelector(
+      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.utils.parse_config"][data-edge-target="module.pipeline.run_model"]`,
+    ) as HTMLElement;
+
+    expect(inboundEdge).toHaveAttribute("data-highlighted", "true");
+    expect(inboundEdge).toHaveClass("graph-edge--highlighted");
+
+    expect(outboundEdge).toHaveAttribute("data-highlighted", "true");
+    expect(outboundEdge).toHaveClass("graph-edge--highlighted");
+
+    const unrelatedContainsEdge = graphCanvas.querySelector(
+      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.pipeline"][data-edge-target="module.pipeline.run_model"]`,
+    ) as HTMLElement;
+
+    const unrelatedImportsEdge = graphCanvas.querySelector(
+      `[data-testid="${GRAPH_EDGE_TEST_ID}"][data-edge-source="module.utils"][data-edge-target="module.pipeline"]`,
+    ) as HTMLElement;
+
+    expect(unrelatedContainsEdge).toHaveAttribute("data-highlighted", "false");
+    expect(unrelatedContainsEdge).not.toHaveClass("graph-edge--highlighted");
+
+    expect(unrelatedImportsEdge).toHaveAttribute("data-highlighted", "false");
+    expect(unrelatedImportsEdge).not.toHaveClass("graph-edge--highlighted");
+  });
 });
