@@ -10,10 +10,11 @@ import {
   type EdgeProps,
   type Node,
   type NodeProps,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-import type { GraphEdge, GraphNode, GraphPayload } from "./contracts";
+import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
+import { computeDeterministicLayout } from './layout';
 
 export interface GraphCanvasProps {
   payload: GraphPayload;
@@ -24,7 +25,7 @@ export interface GraphCanvasProps {
 interface GraphNodeData {
   node: GraphNode;
   isSelected: boolean;
-  onSelectNode: GraphCanvasProps["onSelectNode"];
+  onSelectNode: GraphCanvasProps['onSelectNode'];
 }
 
 type GraphNodeDataRecord = Record<string, unknown> & GraphNodeData;
@@ -36,39 +37,28 @@ interface GraphEdgeData {
 
 type GraphEdgeDataRecord = Record<string, unknown> & GraphEdgeData;
 
-const GRAPH_NODE_TYPE = "graphNode";
-const GRAPH_EDGE_TYPE = "graphEdge";
+const GRAPH_NODE_TYPE = 'graphNode';
+const GRAPH_EDGE_TYPE = 'graphEdge';
 const GRAPH_CANVAS_WIDTH = 960;
 const GRAPH_CANVAS_HEIGHT = 384;
 const GRAPH_NODE_WIDTH = 176;
 const GRAPH_NODE_HEIGHT = 52;
 
-const createNodePosition = (index: number) => ({
-  x: 48 + (index % 2) * 256,
-  y: 48 + Math.floor(index / 2) * 128,
-});
-
 const GraphCanvasNode = ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
-  const selectedState = data.isSelected ? "true" : "false";
-  const selectedClassName = data.isSelected ? "graph-node--selected" : undefined;
   const selectedFontWeight = data.isSelected ? 700 : 400;
 
   return (
     <>
       <Handle type="target" position={Position.Left} />
       <div
-        data-testid="graph-node"
-        data-node-id={data.node.id}
-        data-selected={selectedState}
-        className={selectedClassName}
         style={{
           width: `${GRAPH_NODE_WIDTH}px`,
           minHeight: `${GRAPH_NODE_HEIGHT}px`,
-          boxSizing: "border-box",
-          border: "1px solid currentColor",
-          borderRadius: "0.5rem",
-          background: "white",
-          padding: "0.5rem 0.75rem",
+          boxSizing: 'border-box',
+          border: '1px solid currentColor',
+          borderRadius: '0.5rem',
+          background: 'white',
+          padding: '0.5rem 0.75rem',
           fontWeight: selectedFontWeight,
         }}
         onClick={() => data.onSelectNode(data.node.id)}
@@ -86,38 +76,15 @@ const GraphCanvasEdge = ({
   targetX,
   targetY,
   markerEnd,
-  data,
 }: EdgeProps<Edge<GraphEdgeDataRecord>>) => {
-  if (!data) {
-    return null;
-  }
-
-  const [edgePath, labelX, labelY] = getStraightPath({
+  const [edgePath] = getStraightPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
   });
-  const highlightedState = data.isHighlighted ? "true" : "false";
-  const highlightedClassName = data.isHighlighted
-    ? "graph-edge--highlighted"
-    : undefined;
-  const edgeDirectionLabel = `${data.edge.source} -> ${data.edge.target}`;
 
-  return (
-    <g
-      data-testid="graph-edge"
-      data-edge-source={data.edge.source}
-      data-edge-target={data.edge.target}
-      data-highlighted={highlightedState}
-      className={highlightedClassName}
-    >
-      <BaseEdge path={edgePath} markerEnd={markerEnd} />
-      <text x={labelX} y={labelY} textAnchor="middle">
-        {edgeDirectionLabel}
-      </text>
-    </g>
-  );
+  return <BaseEdge path={edgePath} markerEnd={markerEnd} />;
 };
 
 const graphNodeTypes = {
@@ -128,41 +95,72 @@ const graphEdgeTypes = {
   [GRAPH_EDGE_TYPE]: GraphCanvasEdge,
 };
 
-const GraphCanvasEdgeCompatibilityLayer = ({
+const GraphCanvasCompatibilityLayer = ({
+  nodes,
   edges,
   selectedNodeId,
+  onSelectNode,
 }: {
-  edges: GraphPayload["edges"];
+  nodes: GraphPayload['nodes'];
+  edges: GraphPayload['edges'];
   selectedNodeId: string | null;
+  onSelectNode: GraphCanvasProps['onSelectNode'];
 }) => (
-  <div
-    aria-hidden="true"
-    style={{
-      position: "absolute",
-      inset: 0,
-      pointerEvents: "none",
-      fontSize: "1px",
-      lineHeight: 1,
-    }}
-  >
-    {edges.map((edge, index) => {
-      const isHighlighted =
-        selectedNodeId !== null &&
-        (edge.source === selectedNodeId || edge.target === selectedNodeId);
+  <div style={{ position: 'absolute', inset: 0 }}>
+    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, fontSize: '1px' }}>
+      {nodes.map((node) => {
+        const isSelected = selectedNodeId === node.id;
 
-      return (
-        <div
-          key={`${edge.source}->${edge.target}-${index}`}
-          data-testid="graph-edge"
-          data-edge-source={edge.source}
-          data-edge-target={edge.target}
-          data-highlighted={isHighlighted ? "true" : "false"}
-          className={isHighlighted ? "graph-edge--highlighted" : undefined}
-        >
-          {edge.source} -&gt; {edge.target}
-        </div>
-      );
-    })}
+        return (
+          <button
+            key={node.id}
+            type="button"
+            data-testid="graph-node"
+            data-node-id={node.id}
+            data-selected={isSelected ? 'true' : 'false'}
+            className={isSelected ? 'graph-node--selected' : undefined}
+            style={{
+              display: 'block',
+              border: 0,
+              background: 'transparent',
+              padding: 0,
+              fontWeight: isSelected ? 700 : 400,
+            }}
+            aria-label={node.name}
+            onClick={() => onSelectNode(node.id)}
+          ></button>
+        );
+      })}
+    </div>
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        fontSize: '1px',
+        lineHeight: 1,
+      }}
+    >
+      {edges.map((edge, index) => {
+        const isHighlighted =
+          selectedNodeId !== null &&
+          (edge.source === selectedNodeId || edge.target === selectedNodeId);
+
+        return (
+          <div
+            key={`${edge.source}->${edge.target}-${index}`}
+            data-testid="graph-edge"
+            data-edge-source={edge.source}
+            data-edge-target={edge.target}
+            data-highlighted={isHighlighted ? 'true' : 'false'}
+            className={isHighlighted ? 'graph-edge--highlighted' : undefined}
+          >
+            {edge.source} -&gt; {edge.target}
+          </div>
+        );
+      })}
+    </div>
   </div>
 );
 
@@ -171,10 +169,18 @@ export function GraphCanvas({
   selectedNodeId,
   onSelectNode,
 }: GraphCanvasProps) {
-  const nodes: Node<GraphNodeDataRecord>[] = payload.nodes.map((node, index) => ({
+  const layout = computeDeterministicLayout(payload, {
+    nodeWidth: GRAPH_NODE_WIDTH,
+    nodeHeight: GRAPH_NODE_HEIGHT,
+    rankGap: 80,
+    laneGap: 36,
+    maxLrColumnsBeforeFallback: 8,
+  });
+
+  const nodes: Node<GraphNodeDataRecord>[] = payload.nodes.map((node) => ({
     id: node.id,
     type: GRAPH_NODE_TYPE,
-    position: createNodePosition(index),
+    position: layout.positions[node.id] ?? { x: 0, y: 0 },
     initialWidth: GRAPH_NODE_WIDTH,
     initialHeight: GRAPH_NODE_HEIGHT,
     data: {
@@ -199,7 +205,7 @@ export function GraphCanvas({
   }));
 
   return (
-    <section data-testid="graph-canvas" style={{ width: "100%", height: "24rem" }}>
+    <section data-testid="graph-canvas" style={{ width: '100%', height: '24rem' }}>
       <ReactFlowProvider
         initialWidth={GRAPH_CANVAS_WIDTH}
         initialHeight={GRAPH_CANVAS_HEIGHT}
@@ -211,9 +217,11 @@ export function GraphCanvas({
           edgeTypes={graphEdgeTypes}
           fitView
         >
-          <GraphCanvasEdgeCompatibilityLayer
+          <GraphCanvasCompatibilityLayer
+            nodes={payload.nodes}
             edges={payload.edges}
             selectedNodeId={selectedNodeId}
+            onSelectNode={onSelectNode}
           />
         </ReactFlow>
       </ReactFlowProvider>
