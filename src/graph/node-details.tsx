@@ -17,6 +17,42 @@ export interface DetailPanelProps {
   details: NodeDetails | null;
 }
 
+function countNodeConnections(
+  edges: GraphPayload["edges"],
+  nodeId: string,
+): Pick<NodeDetails, "inboundCount" | "outboundCount"> {
+  let inboundCount = 0;
+  let outboundCount = 0;
+
+  for (const edge of edges) {
+    if (edge.target === nodeId) {
+      inboundCount += 1;
+    }
+
+    if (edge.source === nodeId) {
+      outboundCount += 1;
+    }
+  }
+
+  return { inboundCount, outboundCount };
+}
+
+function getLineRangeText(
+  details: Pick<NodeDetails, "line_start" | "line_end">,
+): string | null {
+  const hasLineStart = details.line_start !== undefined;
+  const hasLineEnd = details.line_end !== undefined;
+
+  if (!hasLineStart && !hasLineEnd) {
+    return null;
+  }
+
+  const lineStartText = hasLineStart ? String(details.line_start) : "?";
+  const lineEndText = hasLineEnd ? String(details.line_end) : "?";
+
+  return `${lineStartText}-${lineEndText}`;
+}
+
 export function deriveSelectedNodeDetails(
   payload: GraphPayload,
   selectedNodeId: string | null,
@@ -31,13 +67,9 @@ export function deriveSelectedNodeDetails(
     return null;
   }
 
-  const inboundCount = payload.edges.reduce(
-    (count, edge) => count + (edge.target === selectedNodeId ? 1 : 0),
-    0,
-  );
-  const outboundCount = payload.edges.reduce(
-    (count, edge) => count + (edge.source === selectedNodeId ? 1 : 0),
-    0,
+  const { inboundCount, outboundCount } = countNodeConnections(
+    payload.edges,
+    selectedNodeId,
   );
 
   return {
@@ -58,12 +90,7 @@ export function DetailPanel({ details }: DetailPanelProps) {
     return null;
   }
 
-  const hasLineStart = details.line_start !== undefined;
-  const hasLineEnd = details.line_end !== undefined;
-  const lineRangeText =
-    hasLineStart || hasLineEnd
-      ? `${hasLineStart ? details.line_start : "?"}-${hasLineEnd ? details.line_end : "?"}`
-      : null;
+  const lineRangeText = getLineRangeText(details);
 
   return (
     <section data-testid="detail-panel">

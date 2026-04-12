@@ -32,24 +32,22 @@ function toNonEmptyTrimmedMessage(value: string): string | null {
   return trimmedMessage;
 }
 
-function normalizeBootstrapErrors(error: unknown): string[] {
+function getBootstrapErrorMessage(error: unknown): string | null {
   if (error instanceof Error) {
-    const normalizedMessage = toNonEmptyTrimmedMessage(error.message);
-
-    if (normalizedMessage !== null) {
-      return [normalizedMessage];
-    }
+    return toNonEmptyTrimmedMessage(error.message);
   }
 
   if (typeof error === "string") {
-    const normalizedMessage = toNonEmptyTrimmedMessage(error);
-
-    if (normalizedMessage !== null) {
-      return [normalizedMessage];
-    }
+    return toNonEmptyTrimmedMessage(error);
   }
 
-  return [FALLBACK_BOOTSTRAP_ERROR_MESSAGE];
+  return null;
+}
+
+function normalizeBootstrapErrors(error: unknown): string[] {
+  const normalizedMessage = getBootstrapErrorMessage(error);
+
+  return [normalizedMessage ?? FALLBACK_BOOTSTRAP_ERROR_MESSAGE];
 }
 
 function getOrCreateBootstrapPromise(

@@ -29,6 +29,19 @@ type DeriveSelectedNodeDetailsContract = (
   selectedNodeId: string | null,
 ) => NodeDetailsContract | null;
 
+const expectNodeDetailsForSelection = (
+  details: NodeDetailsContract | null,
+  selectedNodeId: string,
+): NodeDetailsContract => {
+  expect(details).not.toBeNull();
+
+  if (details === null) {
+    expect.unreachable(`expected selected node details for ${selectedNodeId}`);
+  }
+
+  return details;
+};
+
 describe("node details derivation", () => {
   it("enforces deriveSelectedNodeDetails signature at compile-time", () => {
     expectTypeOf<
@@ -47,16 +60,13 @@ describe("node details derivation", () => {
   });
 
   it("derives parse_config details with symmetric inbound/outbound counts and line range", () => {
-    const details = deriveSelectedNodeDetails(
-      graphFixturePayload,
+    const details = expectNodeDetailsForSelection(
+      deriveSelectedNodeDetails(
+        graphFixturePayload,
+        "module.utils.parse_config",
+      ),
       "module.utils.parse_config",
     );
-
-    expect(details).not.toBeNull();
-
-    if (details === null) {
-      expect.unreachable("expected selected node details for parse_config");
-    }
 
     expect(details.id).toBe("module.utils.parse_config");
     expect(details.name).toBe("parse_config");
@@ -70,16 +80,10 @@ describe("node details derivation", () => {
   });
 
   it("derives module.utils details with asymmetric counts and absent line range", () => {
-    const details = deriveSelectedNodeDetails(
-      graphFixturePayload,
+    const details = expectNodeDetailsForSelection(
+      deriveSelectedNodeDetails(graphFixturePayload, "module.utils"),
       "module.utils",
     );
-
-    expect(details).not.toBeNull();
-
-    if (details === null) {
-      expect.unreachable("expected selected node details for module.utils");
-    }
 
     expect(details.id).toBe("module.utils");
     expect(details.name).toBe("utils");
