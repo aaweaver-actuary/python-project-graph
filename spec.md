@@ -75,7 +75,9 @@ The following are explicitly out of scope for V1:
 - AI-generated architecture suggestions
 - duplicate function similarity scoring
 - full AST inspection UI
-- hand-drawn/pencil-style border effects for boxes/tables are deferred post-release and tracked in GitHub issue #5
+- hand-drawn aesthetic work is deferred post-release and split into PR-AESTH units, with pencil border/arrow treatment traceable to issue #5 + issue #7 and remaining #7 scope deferred in later PR-AESTH units
+- visually distinct circular arrow connection points and border-track anchor movement are deferred post-release and tracked in GitHub issue #8
+- spring-force edge attraction layout behavior is deferred post-release and tracked in GitHub issue #9; FR-2 layered DAG remains the authoritative V1 layout strategy
 
 ---
 
@@ -204,6 +206,12 @@ if horizontal layout becomes too wide.
 Use topological rank if available from Rust.
 
 Otherwise compute client-side.
+
+Precedence rule for layout evolution:
+
+- FR-2 layered DAG defines the primary initial coordinates and directional flow.
+- Any later spring-force behavior (issue #9) is a constrained refinement step after FR-2, not a replacement layout algorithm.
+- Refinement must preserve readable left->right (or top->bottom fallback) layer progression.
 
 ---
 
@@ -498,6 +506,24 @@ If not, V1 has failed regardless of visual quality.
 ## Future V2 Extensions
 
 Reserved future capabilities:
+
+### post-release requirement unit: hand-drawn aesthetic theme (issue traceability: #5 + #7; first slice is pencil treatment)
+
+- PR-AESTH-01 (#5, #7): Given the post-release aesthetic theme is enabled, when graph borders/lines render, then node/table borders and edge arrows use a reusable pencil-treatment style contract with slight hand-drawn wiggle and subtle particle-gap texture across supported border/line contexts.
+- PR-AESTH-02 (#7, deferred residual scope): Given the post-release aesthetic theme is enabled, when the graph workspace renders, then a dotted-paper-style background texture is visible behind the graph content.
+- PR-AESTH-03 (#7, deferred residual scope): Given the post-release aesthetic theme is enabled, when node cards/tables render, then they use saturated post-it-note-like color tokens while preserving readable text contrast.
+
+### post-release requirement unit: dynamic circular connection points (issue traceability: #8; independent of #7/#5)
+
+- PR-CONN-01 (#8): Given directed edges are rendered, when source and target connection points are shown, then each endpoint uses a visually distinct circular arrow connection point.
+- PR-CONN-02 (#8): Given source/target node geometry and edge direction, when endpoint anchors are resolved, then each connection point may attach on any side of its node boundary.
+- PR-CONN-03 (#8): Given nodes or connected edges move, when graph positions update, then each connection point repositions along a border-centered perimeter track while remaining attached to the correct node boundary.
+
+### post-release requirement unit: constrained spring-force refinement (issue traceability: #9; precedence constrained by FR-2)
+
+- PR-SPRING-01 (#9): Given FR-2 layered DAG coordinates are computed, when spring refinement is enabled, then node positions are adjusted only as a secondary pass that starts from the FR-2 result.
+- PR-SPRING-02 (#9): Given spring refinement is applied, when final positions are emitted, then directional layer progression remains readable (left->right by default, top->bottom in FR-2 fallback mode) and no node crosses more than one adjacent layer from its FR-2 starting layer.
+- PR-SPRING-03 (#9): Given two directly connected nodes in adjacent FR-2 layers, when spring refinement runs to convergence bounds, then their final Euclidean distance is less than or equal to their initial FR-2 distance unless blocked by collision/spacing constraints.
 
 ### semantic similarity edges
 
