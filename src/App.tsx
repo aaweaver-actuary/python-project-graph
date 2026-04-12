@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
 import { GraphCanvas } from "./graph/graph-canvas";
+import { deriveSelectedNodeDetails, DetailPanel } from "./graph/node-details";
 
 export interface AppProps {
   runBootstrap: () => Promise<GraphBootstrapState>;
@@ -31,24 +32,22 @@ function toNonEmptyTrimmedMessage(value: string): string | null {
   return trimmedMessage;
 }
 
-function normalizeBootstrapErrors(error: unknown): string[] {
+function getBootstrapErrorMessage(error: unknown): string | null {
   if (error instanceof Error) {
-    const normalizedMessage = toNonEmptyTrimmedMessage(error.message);
-
-    if (normalizedMessage !== null) {
-      return [normalizedMessage];
-    }
+    return toNonEmptyTrimmedMessage(error.message);
   }
 
   if (typeof error === "string") {
-    const normalizedMessage = toNonEmptyTrimmedMessage(error);
-
-    if (normalizedMessage !== null) {
-      return [normalizedMessage];
-    }
+    return toNonEmptyTrimmedMessage(error);
   }
 
-  return [FALLBACK_BOOTSTRAP_ERROR_MESSAGE];
+  return null;
+}
+
+function normalizeBootstrapErrors(error: unknown): string[] {
+  const normalizedMessage = getBootstrapErrorMessage(error);
+
+  return [normalizedMessage ?? FALLBACK_BOOTSTRAP_ERROR_MESSAGE];
 }
 
 function getOrCreateBootstrapPromise(
@@ -108,16 +107,31 @@ function App({ runBootstrap }: AppProps) {
       );
     case "ready": {
       const { payload } = bootstrapState;
+      const selectedNodeDetails = deriveSelectedNodeDetails(
+        payload,
+        selectedNodeId,
+      );
 
       return (
         <section data-testid="bootstrap-ready-view">
           <p>Nodes: {payload.nodes.length}</p>
           <p>Edges: {payload.edges.length}</p>
-          <GraphCanvas
-            payload={payload}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={setSelectedNodeId}
-          />
+          <section
+            data-testid="ready-layout"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(18rem, 28rem)",
+            }}
+          >
+            <GraphCanvas
+              payload={payload}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+            />
+            <aside data-testid="detail-panel-rail">
+              <DetailPanel details={selectedNodeDetails} />
+            </aside>
+          </section>
         </section>
       );
     }

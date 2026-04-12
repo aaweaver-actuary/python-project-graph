@@ -16,6 +16,7 @@ import type { GraphBootstrapState } from "./graph/bootstrap.contracts";
 import type { GraphPayload } from "./graph/contracts";
 import { graphFixturePayload } from "./graph/fixture-data-source.adapter";
 import { GraphCanvas } from "./graph/graph-canvas";
+import type { DetailPanelProps, NodeDetails } from "./graph/node-details";
 
 type AppBootstrapRunner = () => Promise<GraphBootstrapState>;
 
@@ -29,14 +30,41 @@ interface GraphCanvasBoundaryProps {
   onSelectNode: (nodeId: string) => void;
 }
 
+interface NodeDetailsBoundaryProps {
+  id: string;
+  name: string;
+  kind: GraphPayload["nodes"][number]["kind"];
+  module: string;
+  file_path: string;
+  line_start?: number;
+  line_end?: number;
+  inboundCount: number;
+  outboundCount: number;
+}
+
+interface DetailPanelBoundaryProps {
+  details: NodeDetailsBoundaryProps | null;
+}
+
 const BOOTSTRAP_LOADING_VIEW_TEST_ID = "bootstrap-loading-view";
 const BOOTSTRAP_READY_VIEW_TEST_ID = "bootstrap-ready-view";
 const BOOTSTRAP_INVALID_VIEW_TEST_ID = "bootstrap-invalid-payload-view";
+const READY_LAYOUT_TEST_ID = "ready-layout";
+const DETAIL_PANEL_RAIL_TEST_ID = "detail-panel-rail";
 const GRAPH_CANVAS_TEST_ID = "graph-canvas";
 const GRAPH_NODE_TEST_ID = "graph-node";
 const GRAPH_EDGE_TEST_ID = "graph-edge";
+const DETAIL_PANEL_TEST_ID = "detail-panel";
+const DETAIL_NAME_TEST_ID = "detail-name";
+const DETAIL_KIND_TEST_ID = "detail-kind";
+const DETAIL_MODULE_TEST_ID = "detail-module";
+const DETAIL_FILE_PATH_TEST_ID = "detail-file-path";
+const DETAIL_LINE_RANGE_TEST_ID = "detail-line-range";
+const DETAIL_INBOUND_COUNT_TEST_ID = "detail-inbound-count";
+const DETAIL_OUTBOUND_COUNT_TEST_ID = "detail-outbound-count";
 const GRAPH_NODE_SELECTED_CLASS = "graph-node--selected";
 const GRAPH_NODE_SELECTED_FONT_WEIGHT = "700";
+const GRID_TEMPLATE_COLUMNS_NONE_VALUE = "none";
 
 const BOOTSTRAP_VIEW_TEST_IDS = [
   BOOTSTRAP_LOADING_VIEW_TEST_ID,
@@ -208,6 +236,93 @@ const expectOnlySelectedNode = (
   expectSelectedNodeCount(graphCanvas, expectedSelectedNodeId === null ? 0 : 1);
 };
 
+const expectDetailFieldValue = (
+  detailPanel: HTMLElement,
+  fieldTestId: string,
+  expectedValue: string,
+): void => {
+  expect(within(detailPanel).getByTestId(fieldTestId)).toHaveTextContent(
+    expectedValue,
+  );
+};
+
+const countTopLevelTrackSegments = (templateValue: string): number => {
+  let segmentCount = 0;
+  let parenthesisDepth = 0;
+  let hasTokenContent = false;
+
+  for (const character of templateValue.trim()) {
+    if (character === "(") {
+      parenthesisDepth += 1;
+      hasTokenContent = true;
+      continue;
+    }
+
+    if (character === ")") {
+      parenthesisDepth = Math.max(parenthesisDepth - 1, 0);
+      hasTokenContent = true;
+      continue;
+    }
+
+    if (/\s/.test(character) && parenthesisDepth === 0) {
+      if (hasTokenContent) {
+        segmentCount += 1;
+        hasTokenContent = false;
+      }
+      continue;
+    }
+
+    hasTokenContent = true;
+  }
+
+  if (hasTokenContent) {
+    segmentCount += 1;
+  }
+
+  return segmentCount;
+};
+
+const parseExplicitRepeatTrackCount = (
+  templateValue: string,
+): number | null => {
+  const repeatMatch = templateValue.trim().match(/^repeat\(\s*(\d+)\s*,/i);
+
+  if (repeatMatch === null) {
+    return null;
+  }
+
+  return Number(repeatMatch[1]);
+};
+
+const expectExplicitTwoColumnLayoutContract = (
+  readyLayout: HTMLElement,
+): void => {
+  const readyLayoutStyle = window.getComputedStyle(readyLayout);
+  const readyLayoutDisplay = readyLayoutStyle.display;
+
+  expect(["grid", "flex"]).toContain(readyLayoutDisplay);
+
+  if (readyLayoutDisplay === "grid") {
+    const gridTemplateColumns = readyLayoutStyle.gridTemplateColumns.trim();
+
+    expect(gridTemplateColumns).not.toBe("");
+    expect(gridTemplateColumns).not.toBe(GRID_TEMPLATE_COLUMNS_NONE_VALUE);
+
+    const explicitRepeatTrackCount =
+      parseExplicitRepeatTrackCount(gridTemplateColumns);
+
+    const resolvedTrackCount =
+      explicitRepeatTrackCount ??
+      countTopLevelTrackSegments(gridTemplateColumns);
+
+    expect(resolvedTrackCount).toBeGreaterThanOrEqual(2);
+
+    return;
+  }
+
+  expect(["row", "row-reverse"]).toContain(readyLayoutStyle.flexDirection);
+};
+
 describe("App bootstrap gating integration", () => {
   it("enforces the App bootstrap DI props contract at compile-time", () => {
     type AppProps = ComponentProps<typeof App>;
@@ -219,6 +334,14 @@ describe("App bootstrap gating integration", () => {
     type GraphCanvasProps = ComponentProps<typeof GraphCanvas>;
 
     expectTypeOf<GraphCanvasProps>().toEqualTypeOf<GraphCanvasBoundaryProps>();
+  });
+
+  it("enforces the NodeDetails shape contract at compile-time for the S1 detail boundary", () => {
+    expectTypeOf<NodeDetails>().toEqualTypeOf<NodeDetailsBoundaryProps>();
+  });
+
+  it("enforces the DetailPanel props contract at compile-time for the S1 detail boundary", () => {
+    expectTypeOf<DetailPanelProps>().toEqualTypeOf<DetailPanelBoundaryProps>();
   });
 
   it("calls the injected bootstrap runner exactly once on mount", async () => {
@@ -404,6 +527,164 @@ describe("App bootstrap gating integration", () => {
     );
 
     expectOnlySelectedNode(graphCanvas, null);
+  });
+
+  it("keeps detail panel absent in ready state when no node is selected", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    expect(within(graphCanvas).getAllByTestId(GRAPH_NODE_TEST_ID)).toHaveLength(
+      graphFixturePayload.nodes.length,
+    );
+    expect(screen.queryByTestId(DETAIL_PANEL_TEST_ID)).toBeNull();
+  });
+
+  it("enforces ready-state right-rail layout contract when detail panel is shown", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const readyLayout = within(readyView).getByTestId(READY_LAYOUT_TEST_ID);
+
+    expect(within(readyLayout).getByTestId(GRAPH_CANVAS_TEST_ID)).toBeVisible();
+    expect(within(readyLayout).queryByTestId(DETAIL_PANEL_TEST_ID)).toBeNull();
+    expectExplicitTwoColumnLayoutContract(readyLayout);
+
+    const parseConfigNode = getGraphNodeElementById(
+      within(readyLayout).getByTestId(GRAPH_CANVAS_TEST_ID),
+      "module.utils.parse_config",
+    );
+
+    fireEvent.click(parseConfigNode);
+
+    const detailPanelRail = await within(readyLayout).findByTestId(
+      DETAIL_PANEL_RAIL_TEST_ID,
+    );
+
+    const detailPanel =
+      await within(detailPanelRail).findByTestId(DETAIL_PANEL_TEST_ID);
+
+    expect(detailPanel).toBeVisible();
+  });
+
+  it("shows parse_config detail fields and updates detail panel when module.utils is selected", async () => {
+    const runBootstrap = createReadyBootstrapRunner(graphFixturePayload);
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+
+    const parseConfigNode = getGraphNodeElementById(
+      graphCanvas,
+      "module.utils.parse_config",
+    );
+    const moduleUtilsNode = getGraphNodeElementById(
+      graphCanvas,
+      "module.utils",
+    );
+
+    expect(screen.queryByTestId(DETAIL_PANEL_TEST_ID)).toBeNull();
+
+    fireEvent.click(parseConfigNode);
+
+    const detailPanel = await screen.findByTestId(DETAIL_PANEL_TEST_ID);
+
+    expectDetailFieldValue(detailPanel, DETAIL_NAME_TEST_ID, "parse_config");
+    expectDetailFieldValue(detailPanel, DETAIL_KIND_TEST_ID, "function");
+    expectDetailFieldValue(detailPanel, DETAIL_MODULE_TEST_ID, "module.utils");
+    expectDetailFieldValue(
+      detailPanel,
+      DETAIL_FILE_PATH_TEST_ID,
+      "src/module/utils.py",
+    );
+    expectDetailFieldValue(detailPanel, DETAIL_LINE_RANGE_TEST_ID, "42-68");
+    expectDetailFieldValue(detailPanel, DETAIL_INBOUND_COUNT_TEST_ID, "1");
+    expectDetailFieldValue(detailPanel, DETAIL_OUTBOUND_COUNT_TEST_ID, "1");
+
+    fireEvent.click(moduleUtilsNode);
+
+    const updatedDetailPanel = await screen.findByTestId(DETAIL_PANEL_TEST_ID);
+
+    expectDetailFieldValue(updatedDetailPanel, DETAIL_NAME_TEST_ID, "utils");
+    expectDetailFieldValue(updatedDetailPanel, DETAIL_KIND_TEST_ID, "module");
+    expectDetailFieldValue(
+      updatedDetailPanel,
+      DETAIL_MODULE_TEST_ID,
+      "module.utils",
+    );
+    expectDetailFieldValue(
+      updatedDetailPanel,
+      DETAIL_FILE_PATH_TEST_ID,
+      "src/module/utils.py",
+    );
+    expect(
+      within(updatedDetailPanel).queryByTestId(DETAIL_LINE_RANGE_TEST_ID),
+    ).toBeNull();
+    expectDetailFieldValue(
+      updatedDetailPanel,
+      DETAIL_INBOUND_COUNT_TEST_ID,
+      "0",
+    );
+    expectDetailFieldValue(
+      updatedDetailPanel,
+      DETAIL_OUTBOUND_COUNT_TEST_ID,
+      "2",
+    );
+  });
+
+  it("renders partial line metadata as start-? when selected node has line_start without line_end", async () => {
+    const payloadWithPartialLineRange: GraphPayload = {
+      nodes: [
+        {
+          id: "module.partial",
+          kind: "module",
+          name: "partial",
+          module: "module.partial",
+          file_path: "src/module/partial.py",
+        },
+        {
+          id: "module.partial.fn",
+          kind: "function",
+          name: "partial_fn",
+          module: "module.partial",
+          file_path: "src/module/partial.py",
+          line_start: 10,
+        },
+      ],
+      edges: [
+        {
+          source: "module.partial",
+          target: "module.partial.fn",
+          kind: "contains",
+        },
+      ],
+    };
+    const runBootstrap = createReadyBootstrapRunner(
+      payloadWithPartialLineRange,
+    );
+
+    renderAppWithBootstrapRunner(runBootstrap);
+
+    const readyView = await screen.findByTestId(BOOTSTRAP_READY_VIEW_TEST_ID);
+    const graphCanvas = within(readyView).getByTestId(GRAPH_CANVAS_TEST_ID);
+    const nodeWithPartialLineRange = getGraphNodeElementById(
+      graphCanvas,
+      "module.partial.fn",
+    );
+
+    expect(screen.queryByTestId(DETAIL_PANEL_TEST_ID)).toBeNull();
+
+    fireEvent.click(nodeWithPartialLineRange);
+
+    const detailPanel = await screen.findByTestId(DETAIL_PANEL_TEST_ID);
+
+    expectDetailFieldValue(detailPanel, DETAIL_LINE_RANGE_TEST_ID, "10-?");
   });
 
   it("keeps exactly one selected node when selection moves none -> A -> B", async () => {
