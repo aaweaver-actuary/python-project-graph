@@ -63,6 +63,8 @@ import {
 const GRAPH_CANVAS_TEST_ID = 'graph-canvas';
 const GRAPH_NODE_TEST_ID = 'graph-node';
 const GRAPH_EDGE_TEST_ID = 'graph-edge';
+const GRAPH_SOURCE_ENDPOINT_TEST_ID = 'graph-source-endpoint';
+const GRAPH_TARGET_ENDPOINT_TEST_ID = 'graph-target-endpoint';
 const GRAPH_NODE_SELECTED_CLASS = 'graph-node--selected';
 const GRAPH_EDGE_HIGHLIGHTED_CLASS = 'graph-edge--highlighted';
 
@@ -388,6 +390,107 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
           strokeWidth: PENCIL_TREATMENT.lineStrokeWidth,
           strokeDasharray: PENCIL_TREATMENT.lineStrokeDasharray,
           strokeLinecap: PENCIL_TREATMENT.lineCap,
+        }),
+      );
+    });
+  });
+
+  describe('GraphCanvas connection anchor contract (SL-BUNDLE-CONN)', () => {
+    it('renders circular source and target connection endpoints', () => {
+      const renderResult = render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+        />,
+      );
+      const graphCanvas = within(renderResult.container).getByTestId(
+        GRAPH_CANVAS_TEST_ID,
+      );
+
+      const sourceEndpoints = within(graphCanvas).getAllByTestId(
+        GRAPH_SOURCE_ENDPOINT_TEST_ID,
+      );
+      const targetEndpoints = within(graphCanvas).getAllByTestId(
+        GRAPH_TARGET_ENDPOINT_TEST_ID,
+      );
+
+      expect(sourceEndpoints.length).toBeGreaterThan(0);
+      expect(targetEndpoints.length).toBeGreaterThan(0);
+      expect(sourceEndpoints[0]).toHaveAttribute(
+        'data-id',
+        expect.stringContaining('edge-handle-'),
+      );
+      expect(targetEndpoints[0]).toHaveAttribute(
+        'data-id',
+        expect.stringContaining('edge-handle-'),
+      );
+    });
+
+    it('resolves edge anchors to any side and updates handle ids when node geometry changes', () => {
+      reactFlowPropsSpy.mockClear();
+
+      const payload: GraphPayload = {
+        nodes: [
+          {
+            id: 'center',
+            kind: 'module',
+            name: 'center',
+            module: 'center',
+            file_path: 'src/center.py',
+          },
+          {
+            id: 'other',
+            kind: 'function',
+            name: 'other',
+            module: 'other',
+            file_path: 'src/other.py',
+          },
+        ],
+        edges: [{ source: 'center', target: 'other', kind: 'dependency' }],
+      };
+
+      const renderResult = render(
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+          positionOverrides={{
+            center: { x: 0, y: 0 },
+            other: { x: 0, y: 220 },
+          }}
+        />,
+      );
+
+      let firstProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        edges: Array<{ sourceHandle?: string; targetHandle?: string }>;
+      };
+      expect(firstProps.edges[0]).toEqual(
+        expect.objectContaining({
+          sourceHandle: 'edge-handle-bottom',
+          targetHandle: 'edge-handle-top',
+        }),
+      );
+
+      renderResult.rerender(
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+          positionOverrides={{
+            center: { x: 0, y: 0 },
+            other: { x: -220, y: 0 },
+          }}
+        />,
+      );
+
+      firstProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        edges: Array<{ sourceHandle?: string; targetHandle?: string }>;
+      };
+      expect(firstProps.edges[0]).toEqual(
+        expect.objectContaining({
+          sourceHandle: 'edge-handle-left',
+          targetHandle: 'edge-handle-right',
         }),
       );
     });

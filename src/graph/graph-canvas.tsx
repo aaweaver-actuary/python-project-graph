@@ -16,6 +16,7 @@ import '@xyflow/react/dist/style.css';
 import { memo, useCallback, useEffect, useRef } from 'react';
 
 import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
+import { resolveEdgeAnchorPair } from './edge-anchors';
 import { computeDeterministicLayout } from './layout';
 import type { ManualPositionOverrides } from './layout-persistence';
 import { applyPositionOverrides } from './layout-persistence';
@@ -64,6 +65,13 @@ const GRAPH_NODE_WIDTH = 176;
 const GRAPH_NODE_HEIGHT = 52;
 const FOCUS_ANIMATION_DURATION = 300;
 const FOCUS_PADDING = 0.2;
+const EDGE_ENDPOINT_STYLE = {
+  width: '0.7rem',
+  height: '0.7rem',
+  borderRadius: '999px',
+  border: `1.5px solid ${PENCIL_TREATMENT.arrowColor}`,
+  background: '#fffdf8',
+};
 const PENCIL_WIGGLE_BY_KIND: Record<GraphNode['kind'], string> = {
   module: 'rotate(-0.22deg)',
   class: 'rotate(0.24deg)',
@@ -84,7 +92,23 @@ const GraphCanvasNode = memo(
 
     return (
       <>
-        <Handle type="target" position={Position.Left} />
+        {(
+          [
+            ['left', Position.Left],
+            ['right', Position.Right],
+            ['top', Position.Top],
+            ['bottom', Position.Bottom],
+          ] as const
+        ).map(([side, position]) => (
+          <Handle
+            key={`target-${side}`}
+            id={`edge-handle-${side}`}
+            type="target"
+            position={position}
+            data-testid="graph-target-endpoint"
+            style={EDGE_ENDPOINT_STYLE}
+          />
+        ))}
         <div
           style={{
             width: `${GRAPH_NODE_WIDTH}px`,
@@ -105,7 +129,23 @@ const GraphCanvasNode = memo(
         >
           {displayLabel}
         </div>
-        <Handle type="source" position={Position.Right} />
+        {(
+          [
+            ['left', Position.Left],
+            ['right', Position.Right],
+            ['top', Position.Top],
+            ['bottom', Position.Bottom],
+          ] as const
+        ).map(([side, position]) => (
+          <Handle
+            key={`source-${side}`}
+            id={`edge-handle-${side}`}
+            type="source"
+            position={position}
+            data-testid="graph-source-endpoint"
+            style={EDGE_ENDPOINT_STYLE}
+          />
+        ))}
       </>
     );
   },
@@ -301,6 +341,18 @@ export function GraphCanvas({
 
   const edges: Edge<GraphEdgeDataRecord>[] = payload.edges.map(
     (edge, index) => {
+      const sourcePosition = effectivePositions[edge.source] ?? { x: 0, y: 0 };
+      const targetPosition = effectivePositions[edge.target] ?? { x: 0, y: 0 };
+      const anchorPair = resolveEdgeAnchorPair(
+        {
+          x: sourcePosition.x + GRAPH_NODE_WIDTH / 2,
+          y: sourcePosition.y + GRAPH_NODE_HEIGHT / 2,
+        },
+        {
+          x: targetPosition.x + GRAPH_NODE_WIDTH / 2,
+          y: targetPosition.y + GRAPH_NODE_HEIGHT / 2,
+        },
+      );
       const isHighlighted =
         selectedNodeId !== null &&
         (edge.source === selectedNodeId || edge.target === selectedNodeId);
@@ -310,6 +362,8 @@ export function GraphCanvas({
         type: GRAPH_EDGE_TYPE,
         source: edge.source,
         target: edge.target,
+        sourceHandle: anchorPair.sourceHandleId,
+        targetHandle: anchorPair.targetHandleId,
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: PENCIL_TREATMENT.arrowColor,
