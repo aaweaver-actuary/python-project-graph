@@ -3,7 +3,7 @@
 ## Request Summary
 - Request id: REQ-ISSUE-BUNDLE-01
 - User goal: Integrate all open styling/graph behavior issues (#5 #7 #8 #9), complete app styling, and deliver in one PR that closes all four issues.
-- Current state: slice_ready
+- Current state: slice_in_progress
 - Last state change: 2026-04-13
 - State owner: Project Manager
 
@@ -24,6 +24,7 @@
 | intake | intake | Project Manager | YYYY-MM-DD | Request created |
 | intake | requirements_defined | Project Manager | 2026-04-13 | Issue deltas routed through Requirements Planner and scope activated in spec |
 | requirements_defined | slice_ready | Project Manager | 2026-04-13 | Criteria defined and ready for bounded slice planning |
+| slice_ready | slice_in_progress | Project Manager | 2026-04-13 | Dispatched SL-BUNDLE-AESTH to Frontend lane |
 
 ## Criteria Status
 | Criterion id | Criterion | Source | Status (pass/fail/unknown/waived) | Evidence | Notes |
@@ -40,7 +41,7 @@
 ## Remaining Slices
 | Slice id | Objective | Owner lane | Status | Dependencies | Notes |
 | --- | --- | --- | --- | --- | --- |
-| SL-BUNDLE-AESTH | Implement hand-drawn styling scope AC-BUNDLE-01/02/03 | Frontend | ready | none | Includes visual styling + tests |
+| SL-BUNDLE-AESTH | Implement hand-drawn styling scope AC-BUNDLE-01/02/03 | Frontend | in_progress | none | Dispatched to Frontend Supervisor |
 | SL-BUNDLE-CONN | Implement circular endpoints and dynamic anchors AC-BUNDLE-04/05 | Frontend | ready | none | Should preserve interaction behavior |
 | SL-BUNDLE-SPRING | Implement constrained spring refinement AC-BUNDLE-06/07 | Frontend | ready | none | Enforce FR-2 precedence and guardrails |
 | SL-BUNDLE-PR | Final packaging, PR closure references, final verification AC-BUNDLE-08 | Project Manager | pending | prior slices pass | Includes final issue sync + project review |
