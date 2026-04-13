@@ -1,6 +1,7 @@
 # How should an agent team execute the remaining work to production in one shot
 
 ## Answer
+
 - Use this playbook together with:
   - `What remaining work units are required to fully complete the project and what dependencies do they have`
   - `What production-ready gates must pass before release`
@@ -22,20 +23,24 @@
   - update durable memory if workflow facts or architecture decisions changed
 
 - Delivery order under deadline
-  - 1) WU-01 Graph engine foundation
-  - 2) WU-02 Deterministic DAG layout
-  - 3) WU-04 Filter model and sidebar UX
-  - 4) WU-05 Search and focus actions
-  - 5) WU-06 Neighborhood exploration controls
-  - 6) WU-03 Node visual semantics by kind (parallel lane after WU-01)
-  - 7) WU-07 Manual layout override and persistence (parallel lane after WU-02)
-  - 8) WU-08 Scale and performance hardening
-  - 9) WU-09 Production operations and release readiness
+  - 1. WU-01 Graph engine foundation
+  - 2. WU-02 Deterministic DAG layout
+  - 3. WU-04 Filter model and sidebar UX
+  - 4. WU-05 Search and focus actions
+  - 5. WU-06 Neighborhood exploration controls
+  - 6. WU-03 Node visual semantics by kind (parallel lane after WU-01)
+  - 7. WU-07 Manual layout override and persistence (parallel lane after WU-02)
+  - 8. WU-08 Scale and performance hardening
+  - 9. WU-09 Production operations and release readiness
+  - 10. WU-10 Post-release hand-drawn aesthetic theme (issue #7)
+  - 11. WU-11 Post-release connection-point UX (issue #8; depends on WU-01, WU-02, WU-07; independent of WU-10; scheduled after WU-09 signoff)
+  - 12. WU-12 Post-release constrained spring-force refinement (issue #9; depends on WU-02/FR-2 baseline; scheduled after WU-09 signoff)
 
 - Parallelization guidance
   - run WU-03 in parallel with WU-04 and WU-05 once WU-01 is merged
   - run WU-07 in parallel with WU-05 and WU-06 once WU-02 is merged
   - begin CI scaffolding from WU-09 after WU-01, then tighten continuously
+  - after WU-09 signoff, WU-10, WU-11, and WU-12 can execute in parallel post-release lanes if staffing allows (WU-12 remains constrained to FR-2-first sequencing)
 
 - Required evidence to close each WU
   - tests proving the WU acceptance criteria
@@ -56,6 +61,7 @@
   - if memory or instruction conflicts appear, treat `.memories/` and `.github/instructions/` as canonical and reconcile immediately
 
 ## Freshness
+
 - Status: verified against repository
 - Last verified: 2026-04-12
 - Verified from:
