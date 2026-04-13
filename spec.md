@@ -75,9 +75,7 @@ The following are explicitly out of scope for V1:
 - AI-generated architecture suggestions
 - duplicate function similarity scoring
 - full AST inspection UI
-- hand-drawn aesthetic work is deferred post-release and split into PR-AESTH units, with pencil border/arrow treatment traceable to issue #5 + issue #7 and remaining #7 scope deferred in later PR-AESTH units
-- visually distinct circular arrow connection points and border-track anchor movement are deferred post-release and tracked in GitHub issue #8
-- spring-force edge attraction layout behavior is deferred post-release and tracked in GitHub issue #9; FR-2 layered DAG remains the authoritative V1 layout strategy
+- editing issue metadata directly from inside the graph UI (issue linking/closing remains a PR workflow concern)
 
 ---
 
@@ -212,6 +210,7 @@ Precedence rule for layout evolution:
 - FR-2 layered DAG defines the primary initial coordinates and directional flow.
 - Any later spring-force behavior (issue #9) is a constrained refinement step after FR-2, not a replacement layout algorithm.
 - Refinement must preserve readable left->right (or top->bottom fallback) layer progression.
+- If spring refinement conflicts with FR-2 directional readability constraints, FR-2 constraints win and spring displacement must be clamped or skipped.
 
 ---
 
@@ -380,6 +379,86 @@ for V1.1
 
 ---
 
+## Active Issue Integration Scope (Current Request)
+
+Request id:
+
+```text
+REQ-ISSUE-BUNDLE-01
+```
+
+Issue Tracker status at planning time:
+
+```text
+NOT CLEAN
+open issues: #5 #7 #8 #9
+```
+
+These issues are active scope for this request and are no longer deferred post-release.
+
+### AC-BUNDLE-01 Hand-Drawn Border/Arrow Treatment (#5, #7)
+
+Given graph nodes and directed edges are rendered,
+when default styles are applied,
+then node/table borders and edge arrows use a reusable pencil-treatment style contract with slight hand-drawn wiggle and subtle particle-gap texture across supported border/line contexts.
+
+### AC-BUNDLE-02 Dotted Workspace Surface (#7)
+
+Given the graph workspace renders,
+when canvas background styles are visible,
+then a dotted-paper-style texture appears behind graph content without reducing node/edge readability.
+
+### AC-BUNDLE-03 Post-It Color Token Set (#7)
+
+Given node cards/tables render,
+when color tokens are applied,
+then saturated post-it-note-like tokens are used while maintaining readable foreground contrast and preserving FR-3 "do not rely solely on color."
+
+### AC-BUNDLE-04 Circular Connection Endpoints (#8)
+
+Given directed edges are rendered,
+when source and target connection points are shown,
+then each endpoint uses a visually distinct circular arrow connection point.
+
+### AC-BUNDLE-05 Dynamic Border Anchor Resolution (#8)
+
+Given source/target node geometry and edge direction,
+when endpoint anchors are resolved and nodes/edges move,
+then each connection point may attach on any node side and repositions along a border-centered perimeter track while remaining attached to the correct node boundary.
+
+### AC-BUNDLE-06 Constrained Spring Refinement (#9)
+
+Given FR-2 layered DAG coordinates are computed,
+when spring refinement is enabled,
+then node positions are adjusted only as a secondary pass and final positions preserve FR-2 directional layer readability.
+
+### AC-BUNDLE-07 Spring Displacement Guardrail (#9)
+
+Given spring refinement is applied,
+when final positions are emitted,
+then no node crosses more than one adjacent layer from its FR-2 starting layer and directly connected nodes in adjacent FR-2 layers end no farther apart than their FR-2 distance unless blocked by explicit collision/spacing constraints.
+
+### AC-BUNDLE-08 Single PR Issue Closure Contract (#5, #7, #8, #9)
+
+Given implementation and validation are complete,
+when the delivery PR is opened,
+then one PR contains all bundled scope and includes closing references for #5 #7 #8 #9 in the PR body.
+
+### Issue Traceability Matrix (Current Request)
+
+| Criterion id | Issue(s) |
+| --- | --- |
+| AC-BUNDLE-01 | #5, #7 |
+| AC-BUNDLE-02 | #7 |
+| AC-BUNDLE-03 | #7 |
+| AC-BUNDLE-04 | #8 |
+| AC-BUNDLE-05 | #8 |
+| AC-BUNDLE-06 | #9 |
+| AC-BUNDLE-07 | #9 |
+| AC-BUNDLE-08 | #5, #7, #8, #9 |
+
+---
+
 ## Suggested Frontend Stack
 
 ```text
@@ -507,23 +586,13 @@ If not, V1 has failed regardless of visual quality.
 
 Reserved future capabilities:
 
-### post-release requirement unit: hand-drawn aesthetic theme (issue traceability: #5 + #7; first slice is pencil treatment)
+### note on previously deferred issue units (#5, #7, #8, #9)
 
-- PR-AESTH-01 (#5, #7): Given the post-release aesthetic theme is enabled, when graph borders/lines render, then node/table borders and edge arrows use a reusable pencil-treatment style contract with slight hand-drawn wiggle and subtle particle-gap texture across supported border/line contexts.
-- PR-AESTH-02 (#7, deferred residual scope): Given the post-release aesthetic theme is enabled, when the graph workspace renders, then a dotted-paper-style background texture is visible behind the graph content.
-- PR-AESTH-03 (#7, deferred residual scope): Given the post-release aesthetic theme is enabled, when node cards/tables render, then they use saturated post-it-note-like color tokens while preserving readable text contrast.
+Issue units previously listed as post-release are activated in this request under:
 
-### post-release requirement unit: dynamic circular connection points (issue traceability: #8; independent of #7/#5)
-
-- PR-CONN-01 (#8): Given directed edges are rendered, when source and target connection points are shown, then each endpoint uses a visually distinct circular arrow connection point.
-- PR-CONN-02 (#8): Given source/target node geometry and edge direction, when endpoint anchors are resolved, then each connection point may attach on any side of its node boundary.
-- PR-CONN-03 (#8): Given nodes or connected edges move, when graph positions update, then each connection point repositions along a border-centered perimeter track while remaining attached to the correct node boundary.
-
-### post-release requirement unit: constrained spring-force refinement (issue traceability: #9; precedence constrained by FR-2)
-
-- PR-SPRING-01 (#9): Given FR-2 layered DAG coordinates are computed, when spring refinement is enabled, then node positions are adjusted only as a secondary pass that starts from the FR-2 result.
-- PR-SPRING-02 (#9): Given spring refinement is applied, when final positions are emitted, then directional layer progression remains readable (left->right by default, top->bottom in FR-2 fallback mode) and no node crosses more than one adjacent layer from its FR-2 starting layer.
-- PR-SPRING-03 (#9): Given two directly connected nodes in adjacent FR-2 layers, when spring refinement runs to convergence bounds, then their final Euclidean distance is less than or equal to their initial FR-2 distance unless blocked by collision/spacing constraints.
+```text
+Active Issue Integration Scope (Current Request)
+```
 
 ### semantic similarity edges
 
