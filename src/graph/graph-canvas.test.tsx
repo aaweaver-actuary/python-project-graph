@@ -54,10 +54,17 @@ vi.mock('./styles', async () => {
 import type { GraphPayload, NodeKind } from './contracts';
 import { graphFixturePayload } from './fixture-data-source.adapter';
 import { GraphCanvas } from './graph-canvas';
+import {
+  NODE_KIND_POST_IT_TOKENS,
+  PENCIL_TREATMENT,
+  WORKSPACE_DOTTED_SURFACE,
+} from './styles';
 
 const GRAPH_CANVAS_TEST_ID = 'graph-canvas';
 const GRAPH_NODE_TEST_ID = 'graph-node';
 const GRAPH_EDGE_TEST_ID = 'graph-edge';
+const GRAPH_SOURCE_ENDPOINT_TEST_ID = 'graph-source-endpoint';
+const GRAPH_TARGET_ENDPOINT_TEST_ID = 'graph-target-endpoint';
 const GRAPH_NODE_SELECTED_CLASS = 'graph-node--selected';
 const GRAPH_EDGE_HIGHLIGHTED_CLASS = 'graph-edge--highlighted';
 
@@ -131,10 +138,31 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
         expect.objectContaining({
           source: 'module.utils.parse_config',
           target: 'module.pipeline.run_model',
-          markerEnd: expect.anything(),
+          markerEnd: expect.objectContaining({
+            color: PENCIL_TREATMENT.arrowColor,
+          }),
         }),
       ]),
     );
+  });
+
+  it('applies the dotted workspace surface contract to the canvas root', () => {
+    const renderResult = render(
+      <GraphCanvas
+        payload={graphFixturePayload}
+        selectedNodeId={null}
+        onSelectNode={vi.fn<(nodeId: string) => void>()}
+      />,
+    );
+    const graphCanvas = within(renderResult.container).getByTestId(
+      GRAPH_CANVAS_TEST_ID,
+    );
+
+    expect(graphCanvas).toHaveStyle({
+      backgroundColor: WORKSPACE_DOTTED_SURFACE.backgroundColor,
+      backgroundImage: WORKSPACE_DOTTED_SURFACE.backgroundImage,
+      backgroundSize: WORKSPACE_DOTTED_SURFACE.backgroundSize,
+    });
   });
 
   it('renders a React Flow root while preserving node and edge identity hooks', () => {
@@ -315,6 +343,159 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
     });
   });
 
+  describe('GraphCanvas aesthetic styling contract (SL-BUNDLE-AESTH)', () => {
+    it('renders post-it color tokens and pencil border texture on node cards', () => {
+      const renderResult = render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+        />,
+      );
+      const graphCanvas = within(renderResult.container).getByTestId(
+        GRAPH_CANVAS_TEST_ID,
+      );
+      const functionNodeLabel = within(graphCanvas).getByText(
+        /\[WU03-FUNCTION\].*parse_config/,
+      );
+      const functionNodeCard = functionNodeLabel.closest('div');
+
+      expect(functionNodeCard).not.toBeNull();
+      expect(functionNodeCard).toHaveStyle({
+        background: NODE_KIND_POST_IT_TOKENS.function.background,
+        color: NODE_KIND_POST_IT_TOKENS.function.foreground,
+        border: `${PENCIL_TREATMENT.borderWidthPx}px solid ${NODE_KIND_POST_IT_TOKENS.function.border}`,
+        boxShadow: PENCIL_TREATMENT.borderShadow,
+      });
+    });
+
+    it('renders edge lines with pencil-style stroke treatment', () => {
+      reactFlowPropsSpy.mockClear();
+
+      render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+        />,
+      );
+
+      const props = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        edges: Array<{ style?: Record<string, unknown> }>;
+      };
+      const firstEdge = props.edges[0];
+
+      expect(firstEdge.style).toEqual(
+        expect.objectContaining({
+          strokeWidth: PENCIL_TREATMENT.lineStrokeWidth,
+          strokeDasharray: PENCIL_TREATMENT.lineStrokeDasharray,
+          strokeLinecap: PENCIL_TREATMENT.lineCap,
+        }),
+      );
+    });
+  });
+
+  describe('GraphCanvas connection anchor contract (SL-BUNDLE-CONN)', () => {
+    it('renders circular source and target connection endpoints', () => {
+      const renderResult = render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+        />,
+      );
+      const graphCanvas = within(renderResult.container).getByTestId(
+        GRAPH_CANVAS_TEST_ID,
+      );
+
+      const sourceEndpoints = within(graphCanvas).getAllByTestId(
+        GRAPH_SOURCE_ENDPOINT_TEST_ID,
+      );
+      const targetEndpoints = within(graphCanvas).getAllByTestId(
+        GRAPH_TARGET_ENDPOINT_TEST_ID,
+      );
+
+      expect(sourceEndpoints.length).toBeGreaterThan(0);
+      expect(targetEndpoints.length).toBeGreaterThan(0);
+      expect(sourceEndpoints[0]).toHaveAttribute(
+        'data-id',
+        expect.stringContaining('edge-handle-'),
+      );
+      expect(targetEndpoints[0]).toHaveAttribute(
+        'data-id',
+        expect.stringContaining('edge-handle-'),
+      );
+    });
+
+    it('resolves edge anchors to any side and updates handle ids when node geometry changes', () => {
+      reactFlowPropsSpy.mockClear();
+
+      const payload: GraphPayload = {
+        nodes: [
+          {
+            id: 'center',
+            kind: 'module',
+            name: 'center',
+            module: 'center',
+            file_path: 'src/center.py',
+          },
+          {
+            id: 'other',
+            kind: 'function',
+            name: 'other',
+            module: 'other',
+            file_path: 'src/other.py',
+          },
+        ],
+        edges: [{ source: 'center', target: 'other', kind: 'dependency' }],
+      };
+
+      const renderResult = render(
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+          positionOverrides={{
+            center: { x: 0, y: 0 },
+            other: { x: 0, y: 220 },
+          }}
+        />,
+      );
+
+      let firstProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        edges: Array<{ sourceHandle?: string; targetHandle?: string }>;
+      };
+      expect(firstProps.edges[0]).toEqual(
+        expect.objectContaining({
+          sourceHandle: 'edge-handle-bottom',
+          targetHandle: 'edge-handle-top',
+        }),
+      );
+
+      renderResult.rerender(
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+          positionOverrides={{
+            center: { x: 0, y: 0 },
+            other: { x: -220, y: 0 },
+          }}
+        />,
+      );
+
+      firstProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        edges: Array<{ sourceHandle?: string; targetHandle?: string }>;
+      };
+      expect(firstProps.edges[0]).toEqual(
+        expect.objectContaining({
+          sourceHandle: 'edge-handle-left',
+          targetHandle: 'edge-handle-right',
+        }),
+      );
+    });
+  });
+
   describe('GraphCanvas focus viewport request contract (WU-05)', () => {
     it('calls React Flow fitView with deterministic focus options when a new focus request arrives', () => {
       reactFlowFitViewSpy.mockClear();
@@ -445,6 +626,62 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
       };
 
       expect(lastProps.onNodeDragStop).toBeInstanceOf(Function);
+    });
+  });
+
+  describe('GraphCanvas constrained spring refinement contract (SL-BUNDLE-SPRING)', () => {
+    it('keeps FR-2 layout coordinates as the default primary coordinates', () => {
+      reactFlowPropsSpy.mockClear();
+
+      const payload: GraphPayload = {
+        nodes: [
+          {
+            id: 'a',
+            kind: 'module',
+            name: 'a',
+            module: 'a',
+            file_path: 'a.py',
+            topological_rank: 0,
+          },
+          {
+            id: 'b',
+            kind: 'module',
+            name: 'b',
+            module: 'b',
+            file_path: 'b.py',
+            topological_rank: 1,
+          },
+          {
+            id: 'c',
+            kind: 'module',
+            name: 'c',
+            module: 'c',
+            file_path: 'c.py',
+            topological_rank: 1,
+          },
+        ],
+        edges: [{ source: 'a', target: 'b', kind: 'dependency' }],
+      };
+
+      const renderResult = render(
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+        />,
+      );
+
+      const firstProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        nodes: Array<{ id: string; position: { x: number; y: number } }>;
+      };
+      const firstA = firstProps.nodes.find((node) => node.id === 'a');
+      const firstB = firstProps.nodes.find((node) => node.id === 'b');
+
+      expect(firstA?.position).not.toBeUndefined();
+      expect(firstB?.position).not.toBeUndefined();
+      expect((firstA?.position.x ?? 0) < (firstB?.position.x ?? 0)).toBe(true);
+
+      renderResult.unmount();
     });
   });
 });
