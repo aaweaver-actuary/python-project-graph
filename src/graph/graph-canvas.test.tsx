@@ -425,6 +425,22 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
         'data-id',
         expect.stringContaining('edge-handle-'),
       );
+      expect(sourceEndpoints[0]).toHaveAttribute(
+        'data-endpoint-shape',
+        'circle',
+      );
+      expect(targetEndpoints[0]).toHaveAttribute(
+        'data-endpoint-shape',
+        'circle',
+      );
+      expect(sourceEndpoints[0]).toHaveAttribute(
+        'data-endpoint-role',
+        'source',
+      );
+      expect(targetEndpoints[0]).toHaveAttribute(
+        'data-endpoint-role',
+        'target',
+      );
     });
 
     it('resolves edge anchors to any side and updates handle ids when node geometry changes', () => {

@@ -70,7 +70,14 @@ const EDGE_ENDPOINT_STYLE = {
   height: '0.7rem',
   borderRadius: '999px',
   border: `1.5px solid ${PENCIL_TREATMENT.arrowColor}`,
+};
+const SOURCE_ENDPOINT_STYLE = {
+  ...EDGE_ENDPOINT_STYLE,
   background: '#fffdf8',
+};
+const TARGET_ENDPOINT_STYLE = {
+  ...EDGE_ENDPOINT_STYLE,
+  background: '#f2ead7',
 };
 const PENCIL_WIGGLE_BY_KIND: Record<GraphNode['kind'], string> = {
   module: 'rotate(-0.22deg)',
@@ -106,7 +113,9 @@ const GraphCanvasNode = memo(
             type="target"
             position={position}
             data-testid="graph-target-endpoint"
-            style={EDGE_ENDPOINT_STYLE}
+            data-endpoint-shape="circle"
+            data-endpoint-role="target"
+            style={TARGET_ENDPOINT_STYLE}
           />
         ))}
         <div
@@ -143,7 +152,9 @@ const GraphCanvasNode = memo(
             type="source"
             position={position}
             data-testid="graph-source-endpoint"
-            style={EDGE_ENDPOINT_STYLE}
+            data-endpoint-shape="circle"
+            data-endpoint-role="source"
+            style={SOURCE_ENDPOINT_STYLE}
           />
         ))}
       </>
@@ -351,6 +362,10 @@ export function GraphCanvas({
         {
           x: targetPosition.x + GRAPH_NODE_WIDTH / 2,
           y: targetPosition.y + GRAPH_NODE_HEIGHT / 2,
+        },
+        {
+          sourceSize: { width: GRAPH_NODE_WIDTH, height: GRAPH_NODE_HEIGHT },
+          targetSize: { width: GRAPH_NODE_WIDTH, height: GRAPH_NODE_HEIGHT },
         },
       );
       const isHighlighted =

@@ -5,6 +5,11 @@ export interface AnchorPoint {
   y: number;
 }
 
+export interface AnchorNodeSize {
+  width: number;
+  height: number;
+}
+
 export interface EdgeAnchorPair {
   sourceSide: EdgeAnchorSide;
   targetSide: EdgeAnchorSide;
@@ -22,11 +27,18 @@ export const EDGE_HANDLE_ID_BY_SIDE: Record<EdgeAnchorSide, string> = {
 export function resolveNodeSideTowardTarget(
   source: AnchorPoint,
   target: AnchorPoint,
+  sourceSize?: AnchorNodeSize,
 ): EdgeAnchorSide {
   const deltaX = target.x - source.x;
   const deltaY = target.y - source.y;
+  const normalizedDeltaX = sourceSize
+    ? Math.abs(deltaX) / Math.max(sourceSize.width / 2, 1)
+    : Math.abs(deltaX);
+  const normalizedDeltaY = sourceSize
+    ? Math.abs(deltaY) / Math.max(sourceSize.height / 2, 1)
+    : Math.abs(deltaY);
 
-  if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+  if (normalizedDeltaX >= normalizedDeltaY) {
     return deltaX >= 0 ? 'right' : 'left';
   }
 
@@ -36,9 +48,21 @@ export function resolveNodeSideTowardTarget(
 export function resolveEdgeAnchorPair(
   source: AnchorPoint,
   target: AnchorPoint,
+  sizes?: {
+    sourceSize?: AnchorNodeSize;
+    targetSize?: AnchorNodeSize;
+  },
 ): EdgeAnchorPair {
-  const sourceSide = resolveNodeSideTowardTarget(source, target);
-  const targetSide = resolveNodeSideTowardTarget(target, source);
+  const sourceSide = resolveNodeSideTowardTarget(
+    source,
+    target,
+    sizes?.sourceSize,
+  );
+  const targetSide = resolveNodeSideTowardTarget(
+    target,
+    source,
+    sizes?.targetSize,
+  );
 
   return {
     sourceSide,
