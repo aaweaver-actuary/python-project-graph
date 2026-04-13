@@ -628,4 +628,60 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
       expect(lastProps.onNodeDragStop).toBeInstanceOf(Function);
     });
   });
+
+  describe('GraphCanvas constrained spring refinement contract (SL-BUNDLE-SPRING)', () => {
+    it('keeps FR-2 layout coordinates as the default primary coordinates', () => {
+      reactFlowPropsSpy.mockClear();
+
+      const payload: GraphPayload = {
+        nodes: [
+          {
+            id: 'a',
+            kind: 'module',
+            name: 'a',
+            module: 'a',
+            file_path: 'a.py',
+            topological_rank: 0,
+          },
+          {
+            id: 'b',
+            kind: 'module',
+            name: 'b',
+            module: 'b',
+            file_path: 'b.py',
+            topological_rank: 1,
+          },
+          {
+            id: 'c',
+            kind: 'module',
+            name: 'c',
+            module: 'c',
+            file_path: 'c.py',
+            topological_rank: 1,
+          },
+        ],
+        edges: [{ source: 'a', target: 'b', kind: 'dependency' }],
+      };
+
+      const renderResult = render(
+        <GraphCanvas
+          payload={payload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn()}
+        />,
+      );
+
+      const firstProps = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        nodes: Array<{ id: string; position: { x: number; y: number } }>;
+      };
+      const firstA = firstProps.nodes.find((node) => node.id === 'a');
+      const firstB = firstProps.nodes.find((node) => node.id === 'b');
+
+      expect(firstA?.position).not.toBeUndefined();
+      expect(firstB?.position).not.toBeUndefined();
+      expect((firstA?.position.x ?? 0) < (firstB?.position.x ?? 0)).toBe(true);
+
+      renderResult.unmount();
+    });
+  });
 });
