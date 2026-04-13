@@ -54,6 +54,11 @@ vi.mock('./styles', async () => {
 import type { GraphPayload, NodeKind } from './contracts';
 import { graphFixturePayload } from './fixture-data-source.adapter';
 import { GraphCanvas } from './graph-canvas';
+import {
+  NODE_KIND_POST_IT_TOKENS,
+  PENCIL_TREATMENT,
+  WORKSPACE_DOTTED_SURFACE,
+} from './styles';
 
 const GRAPH_CANVAS_TEST_ID = 'graph-canvas';
 const GRAPH_NODE_TEST_ID = 'graph-node';
@@ -131,10 +136,31 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
         expect.objectContaining({
           source: 'module.utils.parse_config',
           target: 'module.pipeline.run_model',
-          markerEnd: expect.anything(),
+          markerEnd: expect.objectContaining({
+            color: PENCIL_TREATMENT.arrowColor,
+          }),
         }),
       ]),
     );
+  });
+
+  it('applies the dotted workspace surface contract to the canvas root', () => {
+    const renderResult = render(
+      <GraphCanvas
+        payload={graphFixturePayload}
+        selectedNodeId={null}
+        onSelectNode={vi.fn<(nodeId: string) => void>()}
+      />,
+    );
+    const graphCanvas = within(renderResult.container).getByTestId(
+      GRAPH_CANVAS_TEST_ID,
+    );
+
+    expect(graphCanvas).toHaveStyle({
+      backgroundColor: WORKSPACE_DOTTED_SURFACE.backgroundColor,
+      backgroundImage: WORKSPACE_DOTTED_SURFACE.backgroundImage,
+      backgroundSize: WORKSPACE_DOTTED_SURFACE.backgroundSize,
+    });
   });
 
   it('renders a React Flow root while preserving node and edge identity hooks', () => {
@@ -312,6 +338,58 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
           within(graphCanvas).getByText(expectedLabelPattern),
         ).toBeVisible();
       }
+    });
+  });
+
+  describe('GraphCanvas aesthetic styling contract (SL-BUNDLE-AESTH)', () => {
+    it('renders post-it color tokens and pencil border texture on node cards', () => {
+      const renderResult = render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+        />,
+      );
+      const graphCanvas = within(renderResult.container).getByTestId(
+        GRAPH_CANVAS_TEST_ID,
+      );
+      const functionNodeLabel = within(graphCanvas).getByText(
+        /\[WU03-FUNCTION\].*parse_config/,
+      );
+      const functionNodeCard = functionNodeLabel.closest('div');
+
+      expect(functionNodeCard).not.toBeNull();
+      expect(functionNodeCard).toHaveStyle({
+        background: NODE_KIND_POST_IT_TOKENS.function.background,
+        color: NODE_KIND_POST_IT_TOKENS.function.foreground,
+        border: `${PENCIL_TREATMENT.borderWidthPx}px solid ${NODE_KIND_POST_IT_TOKENS.function.border}`,
+        boxShadow: PENCIL_TREATMENT.borderShadow,
+      });
+    });
+
+    it('renders edge lines with pencil-style stroke treatment', () => {
+      reactFlowPropsSpy.mockClear();
+
+      render(
+        <GraphCanvas
+          payload={graphFixturePayload}
+          selectedNodeId={null}
+          onSelectNode={vi.fn<(nodeId: string) => void>()}
+        />,
+      );
+
+      const props = reactFlowPropsSpy.mock.lastCall?.[0] as {
+        edges: Array<{ style?: Record<string, unknown> }>;
+      };
+      const firstEdge = props.edges[0];
+
+      expect(firstEdge.style).toEqual(
+        expect.objectContaining({
+          strokeWidth: PENCIL_TREATMENT.lineStrokeWidth,
+          strokeDasharray: PENCIL_TREATMENT.lineStrokeDasharray,
+          strokeLinecap: PENCIL_TREATMENT.lineCap,
+        }),
+      );
     });
   });
 

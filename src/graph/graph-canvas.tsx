@@ -19,7 +19,12 @@ import type { GraphEdge, GraphNode, GraphPayload } from './contracts';
 import { computeDeterministicLayout } from './layout';
 import type { ManualPositionOverrides } from './layout-persistence';
 import { applyPositionOverrides } from './layout-persistence';
-import { getNodeKindVisualSemantics } from './styles';
+import {
+  NODE_KIND_POST_IT_TOKENS,
+  PENCIL_TREATMENT,
+  WORKSPACE_DOTTED_SURFACE,
+  getNodeKindVisualSemantics,
+} from './styles';
 
 export interface GraphCanvasProps {
   payload: GraphPayload;
@@ -59,11 +64,22 @@ const GRAPH_NODE_WIDTH = 176;
 const GRAPH_NODE_HEIGHT = 52;
 const FOCUS_ANIMATION_DURATION = 300;
 const FOCUS_PADDING = 0.2;
+const PENCIL_WIGGLE_BY_KIND: Record<GraphNode['kind'], string> = {
+  module: 'rotate(-0.22deg)',
+  class: 'rotate(0.24deg)',
+  method: 'rotate(-0.2deg)',
+  function: 'rotate(0.18deg)',
+  import: 'rotate(-0.17deg)',
+  constant: 'rotate(0.2deg)',
+  variable: 'rotate(-0.15deg)',
+  package: 'rotate(0.16deg)',
+};
 
 const GraphCanvasNode = memo(
   ({ data }: NodeProps<Node<GraphNodeDataRecord>>) => {
     const selectedFontWeight = data.isSelected ? 700 : 400;
     const visualSemantics = getNodeKindVisualSemantics(data.node.kind);
+    const colorToken = NODE_KIND_POST_IT_TOKENS[data.node.kind];
     const displayLabel = `${visualSemantics.labelPrefix}${data.node.name}`;
 
     return (
@@ -74,11 +90,16 @@ const GraphCanvasNode = memo(
             width: `${GRAPH_NODE_WIDTH}px`,
             minHeight: `${visualSemantics.minHeight}px`,
             boxSizing: 'border-box',
-            border: `1px ${visualSemantics.borderStyle} currentColor`,
+            border: `${PENCIL_TREATMENT.borderWidthPx}px ${visualSemantics.borderStyle} ${colorToken.border}`,
             borderRadius: visualSemantics.borderRadius,
-            background: 'white',
+            borderImage: PENCIL_TREATMENT.borderTexture,
+            borderImageSlice: 1,
+            background: colorToken.background,
+            color: colorToken.foreground,
             padding: '0.5rem 0.75rem',
             fontWeight: selectedFontWeight,
+            transform: PENCIL_WIGGLE_BY_KIND[data.node.kind],
+            boxShadow: PENCIL_TREATMENT.borderShadow,
           }}
           onClick={() => data.onSelectNode(data.node.id)}
         >
@@ -97,6 +118,7 @@ const GraphCanvasEdge = memo(
     targetX,
     targetY,
     markerEnd,
+    data,
   }: EdgeProps<Edge<GraphEdgeDataRecord>>) => {
     const [edgePath] = getStraightPath({
       sourceX,
@@ -105,7 +127,20 @@ const GraphCanvasEdge = memo(
       targetY,
     });
 
-    return <BaseEdge path={edgePath} markerEnd={markerEnd} />;
+    const strokeColor = data?.isHighlighted ? '#40382a' : '#5a5447';
+
+    return (
+      <BaseEdge
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          stroke: strokeColor,
+          strokeWidth: PENCIL_TREATMENT.lineStrokeWidth,
+          strokeDasharray: PENCIL_TREATMENT.lineStrokeDasharray,
+          strokeLinecap: PENCIL_TREATMENT.lineCap,
+        }}
+      />
+    );
   },
 );
 
@@ -265,19 +300,32 @@ export function GraphCanvas({
   }));
 
   const edges: Edge<GraphEdgeDataRecord>[] = payload.edges.map(
-    (edge, index) => ({
-      id: `${edge.source}->${edge.target}-${index}`,
-      type: GRAPH_EDGE_TYPE,
-      source: edge.source,
-      target: edge.target,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      data: {
-        edge,
-        isHighlighted:
-          selectedNodeId !== null &&
-          (edge.source === selectedNodeId || edge.target === selectedNodeId),
-      },
-    }),
+    (edge, index) => {
+      const isHighlighted =
+        selectedNodeId !== null &&
+        (edge.source === selectedNodeId || edge.target === selectedNodeId);
+
+      return {
+        id: `${edge.source}->${edge.target}-${index}`,
+        type: GRAPH_EDGE_TYPE,
+        source: edge.source,
+        target: edge.target,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: PENCIL_TREATMENT.arrowColor,
+        },
+        style: {
+          stroke: isHighlighted ? '#40382a' : '#5a5447',
+          strokeWidth: PENCIL_TREATMENT.lineStrokeWidth,
+          strokeDasharray: PENCIL_TREATMENT.lineStrokeDasharray,
+          strokeLinecap: PENCIL_TREATMENT.lineCap,
+        },
+        data: {
+          edge,
+          isHighlighted,
+        },
+      };
+    },
   );
 
   const handleNodeDragStop = useCallback(
@@ -290,7 +338,13 @@ export function GraphCanvas({
   return (
     <section
       data-testid="graph-canvas"
-      style={{ width: '100%', height: '24rem' }}
+      style={{
+        width: '100%',
+        height: '24rem',
+        backgroundColor: WORKSPACE_DOTTED_SURFACE.backgroundColor,
+        backgroundImage: WORKSPACE_DOTTED_SURFACE.backgroundImage,
+        backgroundSize: WORKSPACE_DOTTED_SURFACE.backgroundSize,
+      }}
     >
       <ReactFlowProvider
         initialWidth={GRAPH_CANVAS_WIDTH}
