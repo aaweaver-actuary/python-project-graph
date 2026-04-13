@@ -4,7 +4,7 @@
 
 - Request id: REQ-ISSUE-BUNDLE-01
 - User goal: Integrate all open styling/graph behavior issues (#5 #7 #8 #9), complete app styling, and deliver in one PR that closes all four issues.
-- Current state: project_review
+- Current state: complete
 - Last state change: 2026-04-13
 - State owner: Project Manager
 
@@ -43,6 +43,7 @@
 | slice_in_progress    | slice_review         | Project Manager | 2026-04-13 | Prepared bundled PR closure references for #5 #7 #8 #9                       |
 | slice_review         | awaiting_issue_sync  | Project Manager | 2026-04-13 | Final issue sync required before project review                              |
 | awaiting_issue_sync  | project_review       | Project Manager | 2026-04-13 | Final issue sync clean; moved to project review                              |
+| project_review       | complete             | Project Manager | 2026-04-13 | All criteria pass; final issue sync clean; Project Reviewer verdict done     |
 
 ## Criteria Status
 
@@ -80,9 +81,9 @@
 
 ## Completion Gate
 
-- Project Reviewer verdict: not done (first pass: ledger inconsistency flagged; PM remediation in progress)
+- Project Reviewer verdict: done (second pass approved after PM remediation)
 - Issue Tracker final pass: pass (clean deltas)
-- PM completion decision: pending
+- PM completion decision: pass (request marked complete)
 
 ## Ownership Rules
 
