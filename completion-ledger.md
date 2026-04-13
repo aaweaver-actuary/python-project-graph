@@ -34,6 +34,10 @@
 | slice_ready          | slice_in_progress    | Project Manager | 2026-04-13 | Dispatched SL-BUNDLE-CONN to Frontend lane                                   |
 | slice_in_progress    | slice_review         | Project Manager | 2026-04-13 | Received Frontend Supervisor + Reviewer result for SL-BUNDLE-CONN            |
 | slice_review         | awaiting_issue_sync  | Project Manager | 2026-04-13 | Cycle-boundary issue sync required before selecting next slice               |
+| awaiting_issue_sync  | slice_ready          | Project Manager | 2026-04-13 | Cycle-boundary issue sync clean; selected SL-BUNDLE-SPRING                   |
+| slice_ready          | slice_in_progress    | Project Manager | 2026-04-13 | Dispatched SL-BUNDLE-SPRING to Frontend lane                                 |
+| slice_in_progress    | slice_review         | Project Manager | 2026-04-13 | Received Frontend Supervisor + Reviewer pass for SL-BUNDLE-SPRING            |
+| slice_review         | awaiting_issue_sync  | Project Manager | 2026-04-13 | Cycle-boundary issue sync required before final packaging slice              |
 
 ## Criteria Status
 
@@ -50,19 +54,18 @@
 
 ## Remaining Slices
 
-| Slice id         | Objective                                                               | Owner lane      | Status   | Dependencies      | Notes                                                 |
-| ---------------- | ----------------------------------------------------------------------- | --------------- | -------- | ----------------- | ----------------------------------------------------- |
-| SL-BUNDLE-AESTH  | Implement hand-drawn styling scope AC-BUNDLE-01/02/03                   | Frontend        | complete | none              | Passed with reviewer approval and validation evidence |
-| SL-BUNDLE-CONN   | Implement circular endpoints and dynamic anchors AC-BUNDLE-04/05        | Frontend        | complete | none              | Implemented; targeted tests passed; reviewer approved |
-| SL-BUNDLE-SPRING | Implement constrained spring refinement AC-BUNDLE-06/07                 | Frontend        | ready    | none              | Enforce FR-2 precedence and guardrails                |
-| SL-BUNDLE-PR     | Final packaging, PR closure references, final verification AC-BUNDLE-08 | Project Manager | pending  | prior slices pass | Includes final issue sync + project review            |
+| Slice id         | Objective                                                               | Owner lane      | Status   | Dependencies      | Notes                                                   |
+| ---------------- | ----------------------------------------------------------------------- | --------------- | -------- | ----------------- | ------------------------------------------------------- |
+| SL-BUNDLE-AESTH  | Implement hand-drawn styling scope AC-BUNDLE-01/02/03                   | Frontend        | complete | none              | Passed with reviewer approval and validation evidence   |
+| SL-BUNDLE-CONN   | Implement circular endpoints and dynamic anchors AC-BUNDLE-04/05        | Frontend        | complete | none              | Implemented; targeted tests passed; reviewer approved   |
+| SL-BUNDLE-SPRING | Implement constrained spring refinement AC-BUNDLE-06/07                 | Frontend        | complete | none              | Passed with reviewer approval; full suite + build green |
+| SL-BUNDLE-PR     | Final packaging, PR closure references, final verification AC-BUNDLE-08 | Project Manager | pending  | prior slices pass | Includes final issue sync + project review              |
 
 ## Blockers And Waivers
 
-| Type                  | Description                                                                             | Impact | Owner                    | Resolution path                                                              |
-| --------------------- | --------------------------------------------------------------------------------------- | ------ | ------------------------ | ---------------------------------------------------------------------------- |
-| ambiguity             | Numeric contrast target not explicitly specified                                        | medium | Requirements Planner     | Use existing tests/readability checks; escalate only if needed               |
-| external-test-failure | Full-suite baseline currently fails in `src/graph/layout.test.ts` global guardrail case | medium | Frontend Supervisor / PM | Address in SL-BUNDLE-SPRING; verify full suite after spring slice completion |
+| Type      | Description                                      | Impact | Owner                | Resolution path                                                |
+| --------- | ------------------------------------------------ | ------ | -------------------- | -------------------------------------------------------------- |
+| ambiguity | Numeric contrast target not explicitly specified | medium | Requirements Planner | Use existing tests/readability checks; escalate only if needed |
 
 ## Issue Sync Status
 

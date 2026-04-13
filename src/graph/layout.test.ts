@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { GraphPayload } from './contracts';
 import { graphFixturePayload } from './fixture-data-source.adapter';
-import {
-  DEFAULT_LAYOUT_OPTIONS,
-  computeDeterministicLayout,
-} from './layout';
+import { DEFAULT_LAYOUT_OPTIONS, computeDeterministicLayout } from './layout';
 
 describe('computeDeterministicLayout (WU-02)', () => {
   it('is deterministic for the same payload', () => {
@@ -169,8 +166,10 @@ describe('computeDeterministicLayout (WU-02)', () => {
 
       for (const edge of springPayload.edges) {
         const baseDistance = Math.hypot(
-          baseLayout.positions[edge.target].x - baseLayout.positions[edge.source].x,
-          baseLayout.positions[edge.target].y - baseLayout.positions[edge.source].y,
+          baseLayout.positions[edge.target].x -
+            baseLayout.positions[edge.source].x,
+          baseLayout.positions[edge.target].y -
+            baseLayout.positions[edge.source].y,
         );
         const refinedDistance = Math.hypot(
           refinedLayout.positions[edge.target].x -
@@ -250,7 +249,10 @@ describe('computeDeterministicLayout (WU-02)', () => {
           { source: 'b', target: 'right-2', kind: 'dependency' },
         ],
       };
-      const baseLayout = computeDeterministicLayout(payload, compactLayoutOptions);
+      const baseLayout = computeDeterministicLayout(
+        payload,
+        compactLayoutOptions,
+      );
       const refinedLayout = computeDeterministicLayout(
         payload,
         compactLayoutOptions,
@@ -344,7 +346,10 @@ describe('computeDeterministicLayout (WU-02)', () => {
           { source: 'm2', target: 'r2', kind: 'dependency' },
         ],
       };
-      const baseLayout = computeDeterministicLayout(payload, compactLayoutOptions);
+      const baseLayout = computeDeterministicLayout(
+        payload,
+        compactLayoutOptions,
+      );
       const refinedLayout = computeDeterministicLayout(
         payload,
         compactLayoutOptions,
@@ -356,10 +361,12 @@ describe('computeDeterministicLayout (WU-02)', () => {
         },
       );
 
-      for (const edge of springPayload.edges) {
+      for (const edge of payload.edges) {
         const baseDistance = Math.hypot(
-          baseLayout.positions[edge.target].x - baseLayout.positions[edge.source].x,
-          baseLayout.positions[edge.target].y - baseLayout.positions[edge.source].y,
+          baseLayout.positions[edge.target].x -
+            baseLayout.positions[edge.source].x,
+          baseLayout.positions[edge.target].y -
+            baseLayout.positions[edge.source].y,
         );
         const refinedDistance = Math.hypot(
           refinedLayout.positions[edge.target].x -
