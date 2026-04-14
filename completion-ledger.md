@@ -60,12 +60,12 @@
 
 ## Remaining Slices
 
-| Slice id         | Objective                                                               | Owner lane      | Status   | Dependencies      | Notes                                                                  |
-| ---------------- | ----------------------------------------------------------------------- | --------------- | -------- | ----------------- | ---------------------------------------------------------------------- |
-| SL-BUNDLE-AESTH  | Implement hand-drawn styling scope AC-BUNDLE-01/02/03                   | Frontend        | complete | none              | Passed with reviewer approval and validation evidence                  |
-| SL-BUNDLE-CONN   | Implement circular endpoints and dynamic anchors AC-BUNDLE-04/05        | Frontend        | complete | none              | Implemented; targeted tests passed; reviewer approved                  |
-| SL-BUNDLE-SPRING | Implement constrained spring refinement AC-BUNDLE-06/07                 | Frontend        | complete | none              | Passed with reviewer approval; full suite + build green                |
-| SL-BUNDLE-PR     | Final packaging, PR closure references, final verification AC-BUNDLE-08 | Project Manager | complete | prior slices pass | Validation complete and closure references prepared; in project review |
+| Slice id         | Objective                                                               | Owner lane      | Status   | Dependencies      | Notes                                                                    |
+| ---------------- | ----------------------------------------------------------------------- | --------------- | -------- | ----------------- | ------------------------------------------------------------------------ |
+| SL-BUNDLE-AESTH  | Implement hand-drawn styling scope AC-BUNDLE-01/02/03                   | Frontend        | complete | none              | Passed with reviewer approval and validation evidence                    |
+| SL-BUNDLE-CONN   | Implement circular endpoints and dynamic anchors AC-BUNDLE-04/05        | Frontend        | complete | none              | Implemented; targeted tests passed; reviewer approved                    |
+| SL-BUNDLE-SPRING | Implement constrained spring refinement AC-BUNDLE-06/07                 | Frontend        | complete | none              | Passed with reviewer approval; full suite + build green                  |
+| SL-BUNDLE-PR     | Final packaging, PR closure references, final verification AC-BUNDLE-08 | Project Manager | complete | prior slices pass | Validation complete, closure references prepared, and project review done |
 
 ## Blockers And Waivers
 
