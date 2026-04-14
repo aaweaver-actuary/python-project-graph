@@ -35,4 +35,69 @@ describe('edge anchor resolution contract (SL-BUNDLE-CONN)', () => {
       targetHandleId: 'edge-handle-left',
     });
   });
+
+  it('resolves any side using node geometry-aware perimeter direction', () => {
+    expect(
+      resolveNodeSideTowardTarget(
+        { x: 0, y: 0 },
+        { x: 120, y: 20 },
+        { width: 320, height: 80 },
+      ),
+    ).toBe('right');
+    expect(
+      resolveNodeSideTowardTarget(
+        { x: 0, y: 0 },
+        { x: 70, y: 300 },
+        { width: 80, height: 320 },
+      ),
+    ).toBe('bottom');
+    expect(
+      resolveNodeSideTowardTarget(
+        { x: 0, y: 0 },
+        { x: -120, y: -20 },
+        { width: 320, height: 80 },
+      ),
+    ).toBe('left');
+    expect(
+      resolveNodeSideTowardTarget(
+        { x: 0, y: 0 },
+        { x: -70, y: -300 },
+        { width: 80, height: 320 },
+      ),
+    ).toBe('top');
+  });
+
+  it('updates resolved handle ids when node geometry changes at stable positions', () => {
+    expect(
+      resolveEdgeAnchorPair(
+        { x: 0, y: 0 },
+        { x: 120, y: 100 },
+        {
+          sourceSize: { width: 80, height: 80 },
+          targetSize: { width: 80, height: 80 },
+        },
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        sourceHandleId: 'edge-handle-right',
+        targetHandleId: 'edge-handle-left',
+      }),
+    );
+
+    expect(
+      resolveEdgeAnchorPair(
+        { x: 0, y: 0 },
+        { x: 120, y: 100 },
+        {
+          sourceSize: { width: 320, height: 80 },
+          targetSize: { width: 320, height: 80 },
+        },
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        sourceHandleId: 'edge-handle-bottom',
+        targetHandleId: 'edge-handle-top',
+      }),
+    );
+  });
 });
