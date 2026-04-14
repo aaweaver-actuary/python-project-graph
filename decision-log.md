@@ -107,3 +107,111 @@
 - Criteria reference: Issue #9 traceability in Active Issue Integration Scope
 - Tests or command output reference: To be provided by Implementer/Reviewer lanes
 - Reviewer note reference: Pending
+
+---
+
+### Decision
+- Id: DEC-003
+- Date: 2026-04-14
+- Owner: Requirements Planner
+- Related request id: REQ-ISSUE-SEPARATE-PRS-02
+
+### Context
+- Problem statement: Prior request `REQ-ISSUE-BUNDLE-01` defined completion through one bundled PR, but current user intent requires separate PRs per issue with merge-triggered auto-closure.
+- Trigger: New request goal explicitly changes completion contract to per-issue PR closure.
+- Constraints: Keep existing implemented scope intact while changing delivery semantics; do not alter completion ledger ownership.
+
+### Options Considered
+1. Keep bundled PR closure semantics and treat new goal as advisory.
+2. Keep bundled implementation semantics but add post-merge manual issue closing.
+3. Re-baseline request contract to one issue per PR with mandatory auto-close references.
+
+### Selected Option
+- Selection: Option 3.
+- Rationale: It directly matches current user-defined definition of done and produces testable closure behavior for each open issue.
+
+### Accepted Risks
+- Risk 1: Increased PR count increases review/coordination overhead.
+- Risk 2: Sequential issue-level merges may lengthen total cycle time.
+
+### Reversal Conditions
+- Condition 1: If user explicitly reverts to bundled closure semantics in a future request.
+- Condition 2: If platform/process constraints make one-issue-per-PR infeasible and PM approves a revised contract.
+
+### Evidence
+- Spec reference: `spec.md` -> "Active Issue Integration Scope (Current Request)" for `REQ-ISSUE-SEPARATE-PRS-02`
+- Criteria reference: `AC-SEP-PR-01`, `AC-SEP-PR-02`
+- Tests or command output reference: To be provided by Implementer/Reviewer lanes
+- Reviewer note reference: Pending
+
+---
+
+### Decision
+- Id: DEC-004
+- Date: 2026-04-14
+- Owner: Requirements Planner
+- Related request id: REQ-ISSUE-SEPARATE-PRS-02
+
+### Context
+- Problem statement: Active issue scope expanded from #5 #7 #8 #9 to include #14 through #25, requiring explicit traceability and completion gating.
+- Trigger: Issue Tracker delta reports open issues #5 #7 #8 #9 #14 #15 #16 #17 #18 #19 #20 #21 #22 #23 #24 #25.
+- Constraints: Requirements must stay explicit/testable even when issue details vary by thread.
+
+### Options Considered
+1. Keep explicit criteria only for #5 #7 #8 #9 and defer #14-#25.
+2. Add one aggregate criterion for #14-#25 without per-issue traceability.
+3. Add per-issue acceptance criteria and a full traceability matrix for all open issues.
+
+### Selected Option
+- Selection: Option 3.
+- Rationale: Provides unambiguous issue-to-criterion mapping and prevents hidden scope gaps during implementation/review.
+
+### Accepted Risks
+- Risk 1: Criteria list grows and increases planning/verification verbosity.
+- Risk 2: Some issue threads may contain evolving acceptance details, requiring additional sync passes.
+
+### Reversal Conditions
+- Condition 1: If issue set is reduced by closure or reprioritization before implementation begins.
+- Condition 2: If PM approves regrouping into a new bounded request with revised issue set.
+
+### Evidence
+- Spec reference: `spec.md` -> `AC-SEP-ISSUE-05`, `AC-SEP-ISSUE-07`, `AC-SEP-ISSUE-08`, `AC-SEP-ISSUE-09`, `AC-SEP-ISSUE-14`..`AC-SEP-ISSUE-25`
+- Criteria reference: `AC-SEP-STYLING-01` + "Issue Traceability Matrix (Current Request)"
+- Tests or command output reference: To be provided by Implementer/Reviewer lanes
+- Reviewer note reference: Pending
+
+---
+
+### Decision
+- Id: DEC-005
+- Date: 2026-04-14
+- Owner: Requirements Planner
+- Related request id: REQ-ISSUE-SEPARATE-PRS-02
+
+### Context
+- Problem statement: Per-issue PR closure contract changes lane routing and validation duties versus prior bundled workflow.
+- Trigger: New completion contract requires repeated issue-level validation and closure metadata correctness.
+- Constraints: Project Manager remains sole authority for completion-ledger state transitions.
+
+### Options Considered
+1. Preserve prior bundled lane routing and validate closure only at final packaging.
+2. Use per-issue implementation lanes but defer closure metadata checks to final project review.
+3. Route work as one bounded issue slice at a time with per-PR closure metadata validation during each slice review.
+
+### Selected Option
+- Selection: Option 3.
+- Rationale: Catches closure-reference and scope-boundary defects early, reducing end-of-cycle rework and preventing non-compliant merges.
+
+### Accepted Risks
+- Risk 1: More frequent issue sync/checkpoints can slow throughput.
+- Risk 2: Strict scope boundaries may require small follow-up PRs for incidental fixes.
+
+### Reversal Conditions
+- Condition 1: If tooling is introduced to automate per-PR closure compliance checks centrally.
+- Condition 2: If PM authorizes a different routing strategy with equivalent closure guarantees.
+
+### Evidence
+- Spec reference: `spec.md` -> `AC-SEP-PR-03` and "PR Metadata Contract (for validation consistency)"
+- Criteria reference: `AC-SEP-PR-01`..`AC-SEP-PR-03`
+- Tests or command output reference: To be provided by Implementer/Reviewer lanes
+- Reviewer note reference: Pending

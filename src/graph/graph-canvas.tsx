@@ -5,7 +5,7 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
-  getStraightPath,
+  getBezierPath,
   useReactFlow,
   type Edge,
   type EdgeProps,
@@ -168,14 +168,18 @@ const GraphCanvasEdge = memo(
     sourceY,
     targetX,
     targetY,
+    sourcePosition,
+    targetPosition,
     markerEnd,
     data,
   }: EdgeProps<Edge<GraphEdgeDataRecord>>) => {
-    const [edgePath] = getStraightPath({
+    const [edgePath] = getBezierPath({
       sourceX,
       sourceY,
       targetX,
       targetY,
+      sourcePosition,
+      targetPosition,
     });
 
     const strokeColor = data?.isHighlighted ? '#40382a' : '#5a5447';
