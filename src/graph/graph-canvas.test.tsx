@@ -4,21 +4,26 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-const { reactFlowPropsSpy, reactFlowFitViewSpy, wu03LabelPrefixByKind } =
-  vi.hoisted(() => ({
-    reactFlowPropsSpy: vi.fn(),
-    reactFlowFitViewSpy: vi.fn(),
-    wu03LabelPrefixByKind: {
-      module: '[WU03-MODULE]',
-      class: '[WU03-CLASS]',
-      method: '[WU03-METHOD]',
-      function: '[WU03-FUNCTION]',
-      constant: '[WU03-CONSTANT]',
-      import: '[WU03-IMPORT]',
-      variable: '[WU03-VARIABLE]',
-      package: '[WU03-PACKAGE]',
-    } as const,
-  }));
+const {
+  baseEdgePathSpy,
+  reactFlowPropsSpy,
+  reactFlowFitViewSpy,
+  wu03LabelPrefixByKind,
+} = vi.hoisted(() => ({
+  baseEdgePathSpy: vi.fn<(path: string) => void>(),
+  reactFlowPropsSpy: vi.fn(),
+  reactFlowFitViewSpy: vi.fn(),
+  wu03LabelPrefixByKind: {
+    module: '[WU03-MODULE]',
+    class: '[WU03-CLASS]',
+    method: '[WU03-METHOD]',
+    function: '[WU03-FUNCTION]',
+    constant: '[WU03-CONSTANT]',
+    import: '[WU03-IMPORT]',
+    variable: '[WU03-VARIABLE]',
+    package: '[WU03-PACKAGE]',
+  } as const,
+}));
 
 vi.mock('@xyflow/react', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
@@ -27,10 +32,61 @@ vi.mock('@xyflow/react', async () => {
 
   return {
     ...actual,
+    BaseEdge: ({ path }: { path: string }) => {
+      baseEdgePathSpy(path);
+
+      return React.createElement('div', {
+        'data-testid': 'graph-edge-svg-path',
+        'data-path': path,
+      });
+    },
     ReactFlow: (props: object) => {
       reactFlowPropsSpy(props);
 
-      return React.createElement(actual.ReactFlow, props);
+      const reactFlowProps = props as {
+        edges?: Array<{
+          id: string;
+          type?: string;
+          source: string;
+          target: string;
+          markerEnd?: unknown;
+          data?: Record<string, unknown>;
+        }>;
+        edgeTypes?: Record<
+          string,
+          React.ComponentType<Record<string, unknown>>
+        >;
+      };
+      const renderedMockEdges = (reactFlowProps.edges ?? []).map((edge) => {
+        const edgeTypeName = edge.type ?? '';
+        const EdgeTypeComponent = reactFlowProps.edgeTypes?.[edgeTypeName];
+
+        if (!EdgeTypeComponent) {
+          return null;
+        }
+
+        return React.createElement(EdgeTypeComponent, {
+          key: `mock-edge-${edge.id}`,
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceX: 0,
+          sourceY: 0,
+          targetX: 200,
+          targetY: 80,
+          sourcePosition: actual.Position.Right,
+          targetPosition: actual.Position.Left,
+          markerEnd: edge.markerEnd,
+          data: edge.data,
+        });
+      });
+
+      return React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(actual.ReactFlow, props),
+        renderedMockEdges,
+      );
     },
     useReactFlow: () => ({
       fitView: reactFlowFitViewSpy,
@@ -144,6 +200,23 @@ describe('GraphCanvas graph engine foundation (WU-01)', () => {
         }),
       ]),
     );
+  });
+
+  it('renders directed edges as cubic Bézier paths', () => {
+    baseEdgePathSpy.mockClear();
+
+    render(
+      <GraphCanvas
+        payload={graphFixturePayload}
+        selectedNodeId={null}
+        onSelectNode={vi.fn<(nodeId: string) => void>()}
+      />,
+    );
+
+    expect(baseEdgePathSpy).toHaveBeenCalled();
+
+    const firstPath = baseEdgePathSpy.mock.calls[0]?.[0] ?? '';
+    expect(firstPath).toContain('C');
   });
 
   it('applies the dotted workspace surface contract to the canvas root', () => {
